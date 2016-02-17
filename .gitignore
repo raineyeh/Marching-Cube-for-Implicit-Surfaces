@@ -26,3 +26,7 @@
 *.exe
 *.out
 *.app
+
+VS_sln/Debug
+VS_sln/Release
+VS_sln/Marching
