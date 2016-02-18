@@ -29,4 +29,5 @@
 
 VS_sln/Debug
 VS_sln/Release
-VS_sln/Marching
+VS_sln/Marching/Debug
+VS_sln/Marching/Release
