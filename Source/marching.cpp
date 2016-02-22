@@ -3,10 +3,68 @@
 
 
 Marching::Marching(void){
-std::cout << "hello world" << std::endl;;
+	this->grid_step_size = .02;
+	this->dirty = true;
+	this->evaluator = NULL;
+	
 }
 
-bool Marching::set_evaluator(Evaluator*){
-	return false;
+bool Marching::set_evaluator(Evaluator* e){
+	if (e){
+		evaluator = e;
+		dirty = true;
+		return true;
+	}
+	else 
+		return false;
 }
 
+bool Marching::set_grid_step_size(float v){
+	if (v > 0 && v <= .5){
+		this->grid_step_size = v;
+		dirty = true;
+		return true;
+	}
+	else {
+		return false;
+	}
+
+}
+
+bool Marching::recalculate(){
+	if (!this->dirty) return true;
+
+	//....
+
+	this->dirty = false;
+	return true;
+}
+
+
+Poly_Data const * Marching::get_poly_data(){
+	
+	this->dirty = true;
+	poly_data.tri_list.empty();
+	poly_data.vertex_list.empty();
+
+	poly_data.vertex_list.resize(6);
+	poly_data.vertex_list[0] = 0;
+	poly_data.vertex_list[1] = .8;
+	poly_data.vertex_list[2] = -.5;
+	poly_data.vertex_list[3] = -.5;
+	poly_data.vertex_list[4] = .8;
+	poly_data.vertex_list[5] = .2;
+
+	poly_data.tri_list.resize(9);
+	poly_data.tri_list[0] = 0;
+	poly_data.tri_list[1] = 1;
+	poly_data.tri_list[2] = -1;
+	poly_data.tri_list[3] = 1;
+	poly_data.tri_list[4] = 2;
+	poly_data.tri_list[5] = -1;
+	poly_data.tri_list[6] = 2;
+	poly_data.tri_list[7] = 3;
+	poly_data.tri_list[8] = -1;
+
+	return &this->poly_data;
+}
