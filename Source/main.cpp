@@ -22,6 +22,8 @@ int main(int argc, char **argv)
 
 	Marching march_maker;
 	march_maker.set_evaluator(&evaluator);
+	march_maker.set_grid_step_size(.02);
+	march_maker.recalculate();
 
 	Drawer drawer(&argc, argv);
 	drawer.set_march(&march_maker);
