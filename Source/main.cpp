@@ -6,7 +6,6 @@
 #include "marching.h"
 #include "drawer.h"
 #include "evaluator.h"
-#include "imgui_impl_glut.h"
 #include <iostream>
 
 
