@@ -8,16 +8,19 @@ float windowWidth = 800;
 float windowHeight = 600;
 int windowID = -1;
 
+void Polynomial(void* data)
+{
 
+}
 void draw_gui()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
 	ImVec2 wsize(400.0f, 150.0f);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
-	char buf[256] = "x^2 + y^2 = 0";
+	static char buf[256] = "x^2 + y^2 = 0";
 	static int grid = 16.0f;
-	ImGui::InputText("Polynomial", buf, 256);
+	ImGui::InputText("Polynomial", buf, 256, 0);
 	ImGui::SliderInt("Grid size", &grid, 16.0f, 128.0f);
 
 	if (ImGui::Button("Refresh"))
