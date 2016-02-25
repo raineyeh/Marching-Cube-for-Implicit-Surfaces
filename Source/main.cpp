@@ -6,7 +6,7 @@
 #include "marching.h"
 #include "drawer.h"
 #include "evaluator.h"
-
+#include "imgui_impl_glut.h"
 #include <iostream>
 
 
@@ -24,6 +24,8 @@ int main(int argc, char **argv)
 	march_maker.set_evaluator(&evaluator);
 	march_maker.set_grid_step_size(.02);
 	march_maker.recalculate();
+	
+	
 
 	Drawer drawer(&argc, argv);
 	drawer.set_march(&march_maker);

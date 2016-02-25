@@ -11,12 +11,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Dependencies\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\Dependencies\imgui\imgui_demo.cpp" />
+    <ClCompile Include="..\..\Dependencies\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\..\Dependencies\imgui\imgui_impl_glut.cpp" />
     <ClCompile Include="..\..\Source\drawer.cpp" />
     <ClCompile Include="..\..\Source\evaluator.cpp" />
     <ClCompile Include="..\..\Source\main.cpp" />
     <ClCompile Include="..\..\Source\marching.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Dependencies\imgui\imconfig.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\imgui.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\imgui_impl_glut.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\imgui_internal.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\stb_rect_pack.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\stb_textedit.h" />
+    <ClInclude Include="..\..\Dependencies\imgui\stb_truetype.h" />
     <ClInclude Include="..\..\Source\drawer.h" />
     <ClInclude Include="..\..\Source\evaluator.h" />
     <ClInclude Include="..\..\Source\marching.h" />
@@ -49,18 +60,22 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>..\..\Dependencies\GL;..\..\Dependencies\imgui;$(IncludePath)</IncludePath>
+    <LibraryPath>..\..\lib;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\..\Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\..\Dependencies;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>freeglut.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
