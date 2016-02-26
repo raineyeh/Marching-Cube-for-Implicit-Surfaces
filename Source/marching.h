@@ -6,7 +6,6 @@
 #include <map>
 #include "evaluator.h"
 
-
 struct Poly_Data{
 	std::vector<float> vertex_list; //xyz coords
 	std::vector<int> tri_list; //v1v2v3 list. v1v2-1 if it's a line
@@ -23,6 +22,13 @@ public:
 	
 
 private:
+	
+	float evaluate(float x, float y, float z);
+	void do_square(float, float, float, float);
+	int add_line(float, float, float, float);
+	int add_line(int, int);
+	int add_point(float, float, float);
+
 
 	Evaluator* evaluator;
 	float grid_step_size;

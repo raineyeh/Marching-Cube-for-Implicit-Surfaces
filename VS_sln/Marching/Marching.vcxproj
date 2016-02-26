@@ -31,6 +31,7 @@
     <ClInclude Include="..\..\Source\drawer.h" />
     <ClInclude Include="..\..\Source\evaluator.h" />
     <ClInclude Include="..\..\Source\marching.h" />
+    <ClInclude Include="..\..\Source\marching_lookup.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BDEE767C-F49F-487A-8676-72AD1AD55F06}</ProjectGuid>
