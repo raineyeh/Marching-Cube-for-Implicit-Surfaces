@@ -83,6 +83,18 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 	if (corner_values[3] > 0) square_index |= 8;
 
 	int* lines_edge = line_table[square_index];
+	int alternative_idx = ambiguous_line_table_redirect[square_index];
+	if (alternative_idx != -1){ //ambiguous case
+		float midx = 0, midy = 0;
+		for (int i = 0; i < 4; i++){
+			midx += corner_coords[i * 2];
+			midy += corner_coords[(i + 1) * 2];
+		}
+		midx /= 4.0; midy /= 4.0;
+		float mid_val = this->evaluate(midx, midy, 0);
+		if (mid_val < 0)
+			lines_edge = line_table[alternative_idx];
+	}
 	for (int i = 0; i < 4; i ++){
 		int line_pt = lines_edge[i];
 		if (line_pt == -1) break;
