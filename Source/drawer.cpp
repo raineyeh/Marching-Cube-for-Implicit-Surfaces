@@ -15,8 +15,8 @@
 using namespace std;
 
 /* Window information */
-float windowWidth = 800;
-float windowHeight = 600;
+float windowWidth = 600;
+float windowHeight = 800;
 int windowID = -1;
 /* Data information */
 const Poly_Data* pData;
@@ -25,26 +25,32 @@ static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 GLuint shader_program = -1;
 GLuint vao = -1 ;
 glm::mat4 P;
+Drawer* pDrawer = nullptr;
+bool hasInit = false;
 void draw_gui()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
-	ImVec2 wsize(400.0f, 150.0f);
+	ImVec2 wsize(windowWidth, 180.0f);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
+	ImVec2 wpos(0.0f, windowHeight - 180.0f);
+	ImGui::SetWindowPos(wpos);
 	static char buf[256] = "x^2 + y^2 = 0";
 	static float grid = 0.02f;
 	ImGui::InputText("Polynomial", buf, 256, 0);
 	ImGui::SliderFloat("Grid size", &grid, 0.01f, 0.1f);
-
-	if (ImGui::Button("Refresh") && pData){			
+	
+	if (ImGui::Button("Refresh") && pDrawer && pDrawer->Get_poly_data() &&
+		!pData->tri_list.empty() && !pData->vertex_list.empty()){			
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);		
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_SHORT), &pData->tri_list[0], GL_DYNAMIC_DRAW); //send the vertice to the GPU
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_SHORT), &pData->tri_list[0], GL_DYNAMIC_DRAW); 
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, pData->vertex_list.size()*sizeof(float), &pData->vertex_list[0], GL_DYNAMIC_DRAW); //send the vertice to the GPU
+		glBufferData(GL_ARRAY_BUFFER, pData->vertex_list.size()*sizeof(float), &pData->vertex_list[0], GL_DYNAMIC_DRAW); 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);		
 	}	
 	ImGui::Render();
+	hasInit = true;
 }
 void display()
 {
@@ -64,7 +70,7 @@ void display()
 		
 	if (pData){
 		glBindVertexArray(vao);	
-		glDrawElements(GL_LINES, pData->vertex_list.size() , GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_TRIANGLES, pData->vertex_list.size() , GL_UNSIGNED_SHORT, 0);
 		glBindVertexArray(0);
 	}		
 	draw_gui();	
@@ -112,7 +118,9 @@ void idle()
 }
 void reshape(int w, int h)
 {
-	glViewport(0, 0, w, h);
+	glViewport(0, 200, w, h - 200 );
+	windowWidth = w;
+	windowHeight = h;
 	P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 100.0f);
 }
 
@@ -169,11 +177,19 @@ bool Drawer::set_march(Marching* m){
 	return true;
 }
 
+bool Drawer::Get_poly_data()
+{
+	if (marching_obj == nullptr) return false;
+	bool ret = marching_obj->recalculate();
+	pData = marching_obj->get_poly_data();
+	return ret;
+}
+
 void Drawer::start(){
 
 	/* Start the main GLUT loop */
 	/* NOTE: No code runs after this */	
-	pData = marching_obj->get_poly_data();
+	pDrawer = this;
 	glutMainLoop();
 	int a = 0;
 }
