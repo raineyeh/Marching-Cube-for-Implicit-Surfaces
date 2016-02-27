@@ -42,6 +42,9 @@
     <ClCompile Include="..\..\Dependencies\imgui\imgui_impl_glut.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Source\InitShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\marching.h">
@@ -74,5 +77,19 @@
     <ClInclude Include="..\..\Dependencies\imgui\stb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\vao.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\InitShader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Source\fs.glsl">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\..\Source\vs.glsl">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
