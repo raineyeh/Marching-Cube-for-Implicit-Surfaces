@@ -212,15 +212,7 @@ Poly_Data const * Marching::get_poly_data(){
 	poly_data.tri_list[3] = 3;
 	poly_data.tri_list[4] = 4;
 	poly_data.tri_list[5] = 5;
-	
-<<<<<<< HEAD
-=======
-
-
-	//above is dub
 
 	//if (this->dirty) this->recalculate();
-	
->>>>>>> origin/master
 	return &this->poly_data;
 }
