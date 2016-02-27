@@ -185,24 +185,27 @@ Poly_Data const * Marching::get_poly_data(){
 	poly_data.tri_list.empty();
 	poly_data.vertex_list.empty();
 
-	poly_data.vertex_list.resize(6);
-	poly_data.vertex_list[0] = 0;
-	poly_data.vertex_list[1] = .8;
-	poly_data.vertex_list[2] = -.5;
+	poly_data.vertex_list.resize(9);
+	poly_data.vertex_list[0] = .0;
+	poly_data.vertex_list[1] = .0;
+	poly_data.vertex_list[2] = .0;
 	poly_data.vertex_list[3] = -.5;
-	poly_data.vertex_list[4] = .8;
-	poly_data.vertex_list[5] = .2;
+	poly_data.vertex_list[4] = -.0;
+	poly_data.vertex_list[5] = .0;
+	poly_data.vertex_list[6] = .0;
+	poly_data.vertex_list[7] = .8;
+	poly_data.vertex_list[8] = .0;
 
-	poly_data.tri_list.resize(9);
+	poly_data.tri_list.resize(6);
 	poly_data.tri_list[0] = 0;
 	poly_data.tri_list[1] = 1;
-	poly_data.tri_list[2] = -1;
-	poly_data.tri_list[3] = 1;
+
+	poly_data.tri_list[2] = 1;
+	poly_data.tri_list[3] = 2;
+	
 	poly_data.tri_list[4] = 2;
-	poly_data.tri_list[5] = -1;
-	poly_data.tri_list[6] = 2;
-	poly_data.tri_list[7] = 3;
-	poly_data.tri_list[8] = -1;
+	poly_data.tri_list[5] = 0;
+	
 
 
 	//above is dub

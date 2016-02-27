@@ -8,7 +8,7 @@
 
 struct Poly_Data{
 	std::vector<float> vertex_list; //xyz coords
-	std::vector<int> tri_list; //v1v2v3 list. v1v2-1 if it's a line
+	std::vector<unsigned short> tri_list; //v1v2v3 list. v1v2-1 if it's a line
 };
 
 class Marching
