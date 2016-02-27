@@ -77,6 +77,9 @@
     <ClInclude Include="..\..\Dependencies\imgui\stb_truetype.h">
       <Filter>imgui</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Source\marching_lookup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\Source\vao.h">
       <Filter>Header Files</Filter>
     </ClInclude>

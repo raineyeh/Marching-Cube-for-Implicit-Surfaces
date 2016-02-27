@@ -13,5 +13,5 @@ bool Evaluator::set_equation(std::string s){
 }
 
 float Evaluator::evaluate(float x, float y, float z){
-	return x*x + y*y; //dub. temporary
+	return x + y; //dub. temporary
 }

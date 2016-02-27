@@ -33,6 +33,7 @@
     <ClInclude Include="..\..\Source\evaluator.h" />
     <ClInclude Include="..\..\Source\InitShader.h" />
     <ClInclude Include="..\..\Source\marching.h" />
+    <ClInclude Include="..\..\Source\marching_lookup.h" />
     <ClInclude Include="..\..\Source\vao.h" />
   </ItemGroup>
   <ItemGroup>
