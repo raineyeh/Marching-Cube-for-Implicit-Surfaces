@@ -10,11 +10,9 @@ void init_buffer()
 	glGenBuffers(1, &vbo);
 	glGenBuffers(1, &ibo);
 	glGenVertexArrays(1, &vao);	
-
 	glBindVertexArray(vao);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glBindBuffer(GL_ARRAY_BUFFER, vbo); 
-
 	GLint pos_loc0 = glGetAttribLocation(shader_program, "pos_attrib"); 
 	glEnableVertexAttribArray(pos_loc0); 
 	glVertexAttribPointer(pos_loc0, 3, GL_FLOAT, false, 0, BUFFER_OFFSET(0)); 
