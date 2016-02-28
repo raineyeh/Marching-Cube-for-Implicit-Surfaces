@@ -167,8 +167,8 @@ int Marching::add_point(float xval, float yval, float zval){
 
 int Marching::add_line(float x0, float y0, float x1, float y1){
 	
-	int new_vertex_i1 = add_point(x0, y0, -1);
-	int new_vertex_i2 = add_point(x1, y1, -1);
+	int new_vertex_i1 = add_point(x0, y0, 0);
+	int new_vertex_i2 = add_point(x1, y1, 0);
 	return add_line(new_vertex_i1, new_vertex_i2);
 
 	
@@ -180,7 +180,7 @@ int Marching::add_line(int pi1, int pi2){
 	
 	this->poly_data.tri_list.push_back(pi1);
 	this->poly_data.tri_list.push_back(pi2);
-	this->poly_data.tri_list.push_back(pi2);
+	//this->poly_data.tri_list.push_back(pi2);
 
 	return new_line_i;
 
@@ -189,7 +189,7 @@ int Marching::add_line(int pi1, int pi2){
 
 Poly_Data const * Marching::get_poly_data(){
 	
-	this->dirty = true;
+	/*this->dirty = true;
 	poly_data.tri_list.empty();
 	poly_data.vertex_list.empty();
 
@@ -211,8 +211,8 @@ Poly_Data const * Marching::get_poly_data(){
 	poly_data.tri_list[2] = 1;
 	poly_data.tri_list[3] = 2;
 	poly_data.tri_list[4] = 2;
-	poly_data.tri_list[5] = 0;
+	poly_data.tri_list[5] = 0;*/
 
-	//if (this->dirty) this->recalculate();
+	if (this->dirty) this->recalculate();
 	return &this->poly_data;
 }
