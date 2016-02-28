@@ -15,7 +15,7 @@
 using namespace std;
 
 /* Window information */
-float windowWidth = 600;
+float windowWidth = 1200;
 float windowHeight = 800;
 int windowID = -1;
 /* Data information */
@@ -30,10 +30,10 @@ bool hasInit = false;
 void draw_gui()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
-	ImVec2 wsize(windowWidth, 180.0f);
+	ImVec2 wsize(400.0f, windowHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
-	ImVec2 wpos(0.0f, windowHeight - 180.0f);
+	ImVec2 wpos(windowWidth - 400.0f, 0);
 	ImGui::SetWindowPos(wpos);
 	static char buf[256] = "x^2 + y^2 = 0";
 	static float grid = 0.02f;
@@ -70,7 +70,7 @@ void display()
 		
 	if (pData){
 		glBindVertexArray(vao);	
-		glDrawElements(GL_TRIANGLES, pData->vertex_list.size() , GL_UNSIGNED_SHORT, 0);
+		glDrawElements(GL_LINES, pData->vertex_list.size() , GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}		
 	draw_gui();	
@@ -118,7 +118,7 @@ void idle()
 }
 void reshape(int w, int h)
 {
-	glViewport(0, 200, w, h - 200 );
+	glViewport(0, 0, w - 400, h );
 	windowWidth = w;
 	windowHeight = h;
 	P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 100.0f);
