@@ -38,12 +38,12 @@ void draw_gui()
 	static char buf[256] = "x^2 + y^2 = 0";
 	static float grid = 0.02f;
 	ImGui::InputText("Polynomial", buf, 256, 0);
-	ImGui::SliderFloat("Grid size", &grid, 0.01f, 0.1f);
-	
+	ImGui::SliderFloat("Grid size", &grid, 0.01f, 0.1f);	
+
 	if (ImGui::Button("Refresh") && pDrawer && pDrawer->Get_poly_data() &&
-		!pData->tri_list.empty() && !pData->vertex_list.empty()){			
+		!pData->tri_list.empty() && !pData->vertex_list.empty()){	
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);		
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_SHORT), &pData->tri_list[0], GL_DYNAMIC_DRAW); 
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_INT), &pData->tri_list[0], GL_DYNAMIC_DRAW);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, pData->vertex_list.size()*sizeof(float), &pData->vertex_list[0], GL_DYNAMIC_DRAW); 
