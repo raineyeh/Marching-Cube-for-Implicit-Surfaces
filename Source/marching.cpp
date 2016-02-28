@@ -4,7 +4,7 @@
 
 
 Marching::Marching(void){
-	this->grid_step_size = .02;
+	this->grid_step_size = .2;
 	this->dirty = true;
 	this->evaluator = NULL;
 	
@@ -46,17 +46,20 @@ bool Marching::recalculate(){
 
 
 	float x_0, x_1, y_0, y_1;
-	for (x_0 = -1.0; x_0 < 1.0; x_0 += this->grid_step_size){
+	for (x_0 = -1.0; x_0 < 1.0 ; x_0 += this->grid_step_size){
 		x_1 = x_0 + this->grid_step_size;
 		for (y_0 = -1.0; y_0 < 1.0; y_0 += this->grid_step_size){
 			y_1 = y_0 + this->grid_step_size;
 
 			this->do_square(x_0, x_1, y_0, y_1);
-
+		
 
 		}
+		
 	}
 
+	for (int i = 0; i < poly_data.tri_list.size(); i++)
+		std::cout << poly_data.tri_list[i] << " ";
 
 	this->dirty = false;
 	return true;
@@ -100,8 +103,10 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 		if (line_pt == -1) break;
 		int vi1 = 2*line_pt;
 		int vi2 = 2*((line_pt + 1) % 4);
-		intersect_coord[2*i] = interp(corner_coords[vi1], corner_coords[vi2], corner_values[line_pt], corner_values[(line_pt+1)%4]);
-		intersect_coord[2*i+1] = interp(corner_coords[vi1+1], corner_coords[vi2+1], corner_values[line_pt], corner_values[(line_pt+1)%4]);
+		float x_interp = interp(corner_coords[vi1], corner_coords[vi2], corner_values[line_pt], corner_values[(line_pt + 1) % 4]);
+		float y_interp = interp(corner_coords[vi1 + 1], corner_coords[vi2 + 1], corner_values[line_pt], corner_values[(line_pt + 1) % 4]);
+		intersect_coord[2 * i] = x_interp;
+		intersect_coord[2 * i + 1] = y_interp;
 	}
 	for (int i = 0; i < 2; i+=2){
 		int line_pt = lines_edge[i];
@@ -154,13 +159,14 @@ int Marching::add_point(float xval, float yval, float zval){
 	this->poly_data.vertex_list.push_back(xval);
 	this->poly_data.vertex_list.push_back(yval);
 	this->poly_data.vertex_list.push_back(zval);
+	std::cout << xval << "\t" << yval << "\t" << zval << ";"<< std::endl;
 	return new_vertex_i;
 }
 
 int Marching::add_line(float x0, float y0, float x1, float y1){
 	
-	int new_vertex_i1 = add_point(x0, y0, 0);
-	int new_vertex_i2 = add_point(x1, y1, 0);
+	int new_vertex_i1 = add_point(x0, y0, -1);
+	int new_vertex_i2 = add_point(x1, y1, -1);
 	return add_line(new_vertex_i1, new_vertex_i2);
 
 	
@@ -172,7 +178,7 @@ int Marching::add_line(int pi1, int pi2){
 	
 	this->poly_data.tri_list.push_back(pi1);
 	this->poly_data.tri_list.push_back(pi2);
-	this->poly_data.tri_list.push_back(-1);
+	//this->poly_data.tri_list.push_back(-1);
 
 	return new_line_i;
 
@@ -180,7 +186,7 @@ int Marching::add_line(int pi1, int pi2){
 
 
 Poly_Data const * Marching::get_poly_data(){
-	
+	/*
 	this->dirty = true;
 	poly_data.tri_list.empty();
 	poly_data.vertex_list.empty();
@@ -206,11 +212,11 @@ Poly_Data const * Marching::get_poly_data(){
 	poly_data.tri_list[4] = 2;
 	poly_data.tri_list[5] = 0;
 	
-
+	*/
 
 	//above is dub
 
-	//if (this->dirty) this->recalculate();
+	if (this->dirty) this->recalculate();
 	
 	return &this->poly_data;
 }

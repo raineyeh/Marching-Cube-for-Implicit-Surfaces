@@ -38,7 +38,7 @@ void draw_gui()
 
 	if (ImGui::Button("Refresh") && pData){			
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);		
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_SHORT), &pData->tri_list[0], GL_DYNAMIC_DRAW); //send the vertice to the GPU
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(int), &pData->tri_list[0], GL_DYNAMIC_DRAW); //send the vertice to the GPU
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		glBufferData(GL_ARRAY_BUFFER, pData->vertex_list.size()*sizeof(float), &pData->vertex_list[0], GL_DYNAMIC_DRAW); //send the vertice to the GPU
