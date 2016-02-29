@@ -27,6 +27,15 @@ GLuint vao = -1 ;
 glm::mat4 P;
 Drawer* pDrawer = nullptr;
 bool hasInit = false;
+
+void drawbuffer(int ni,int nv,void* pi,void* pv){
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
 void draw_gui()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
@@ -36,19 +45,27 @@ void draw_gui()
 	ImVec2 wpos(windowWidth - 400.0f, 0);
 	ImGui::SetWindowPos(wpos);
 	static char buf[256] = "x^2 + y^2 = 0";
-	static float grid = 0.02f;
+	static float fGrid = 0.2f;
 	ImGui::InputText("Polynomial", buf, 256, 0);
-	ImGui::SliderFloat("Grid size", &grid, 0.01f, 0.1f);	
-
-	if (ImGui::Button("Refresh") && pDrawer && pDrawer->Get_poly_data() &&
+	if (ImGui::SliderFloat("Grid size", &fGrid, 0.05f, 0.5f)){
+		pDrawer->SendData(fGrid);
+	}
+	if (ImGui::Button("Finish") && pDrawer && pDrawer->Get_poly_data() && pData &&
 		!pData->tri_list.empty() && !pData->vertex_list.empty()){	
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);		
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, pData->tri_list.size()*sizeof(GL_UNSIGNED_INT), &pData->tri_list[0], GL_DYNAMIC_DRAW);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		glBufferData(GL_ARRAY_BUFFER, pData->vertex_list.size()*sizeof(float), &pData->vertex_list[0], GL_DYNAMIC_DRAW); 
-		glBindBuffer(GL_ARRAY_BUFFER, 0);		
-	}	
+		drawbuffer(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
+			(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);		
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Next Step")){
+		pDrawer->NextStep();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Movie")){
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Clear")){
+		drawbuffer(0, 0, nullptr, nullptr);		
+	}
 	ImGui::Render();
 	hasInit = true;
 }
@@ -192,4 +209,14 @@ void Drawer::start(){
 	pDrawer = this;
 	glutMainLoop();
 	int a = 0;
+}
+
+void Drawer::SendData(float fGrid)
+{
+	marching_obj->set_grid_step_size(fGrid);
+}
+
+void Drawer::NextStep()
+{
+
 }
