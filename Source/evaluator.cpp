@@ -1,7 +1,7 @@
 #include "evaluator.h"
 
 Evaluator::Evaluator(){
-
+	//fdklfjsdfjsfkjsdl
 }
 
 Evaluator::Evaluator(std::string s){
