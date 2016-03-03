@@ -2,6 +2,7 @@
 
 Evaluator::Evaluator() {
 	set_equation("x^2+y^2-0.5");
+
 }
 
 Evaluator::Evaluator(std::string s) {
