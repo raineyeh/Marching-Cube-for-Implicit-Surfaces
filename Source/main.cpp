@@ -26,5 +26,6 @@ int main(int argc, char **argv)
 
 	Drawer drawer(&argc, argv);
 	drawer.set_march(&march_maker);
+	drawer.set_evaluator(&evaluator);
 	drawer.start();	
 }

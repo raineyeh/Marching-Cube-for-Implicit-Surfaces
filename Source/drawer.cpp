@@ -15,8 +15,9 @@
 using namespace std;
 
 /* Window information */
-float windowWidth = 1200;
-float windowHeight = 800;
+float windowWidth = 1050;
+float windowHeight = 700;
+float barwidth = 350;
 int windowID = -1;
 /* Data information */
 const Poly_Data* pData;
@@ -39,25 +40,29 @@ void drawbuffer(int ni,int nv,void* pi,void* pv){
 void draw_gui()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
-	ImVec2 wsize(400.0f, windowHeight);
+	ImVec2 wsize(barwidth, windowHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
-	ImVec2 wpos(windowWidth - 400.0f, 0);
+	ImVec2 wpos(windowWidth - barwidth, 0);
 	ImGui::SetWindowPos(wpos);
-	static char buf[256] = "x^2 + y^2 = 0";
+	static char buf[256] = "x^2 + y^2";
 	static float fGrid = 0.2f;
+	
 	ImGui::InputText("Polynomial", buf, 256, 0);
 	if (ImGui::SliderFloat("Grid size", &fGrid, 0.05f, 0.5f)){
-		pDrawer->SendData(fGrid);
+		if (pDrawer)
+			pDrawer->SendData(fGrid);
 	}
 	if (ImGui::Button("Finish") && pDrawer && pDrawer->Get_poly_data() && pData &&
-		!pData->tri_list.empty() && !pData->vertex_list.empty()){	
+		!pData->tri_list.empty() && !pData->vertex_list.empty()){			
+		pDrawer->SetEquation(string(buf));
 		drawbuffer(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
 			(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Next Step")){
-		pDrawer->NextStep();
+		if (pDrawer)
+			pDrawer->NextStep();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Movie")){
@@ -68,6 +73,7 @@ void draw_gui()
 	}
 	ImGui::Render();
 	hasInit = true;
+	
 }
 void display()
 {
@@ -135,7 +141,7 @@ void idle()
 }
 void reshape(int w, int h)
 {
-	glViewport(0, 0, w - 400, h );
+	glViewport(0, 0, w - barwidth, h);
 	windowWidth = w;
 	windowHeight = h;
 	P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, 0.0f, 100.0f);
@@ -187,18 +193,20 @@ Drawer::Drawer(int* argc, char** argv){
 	glutPassiveMotionFunc(motion);
 	glutReshapeFunc(reshape);
 	glutIdleFunc(idle);	
+	m_pEvaluator = NULL;
+	m_pMmarching = NULL;
 }
 
 bool Drawer::set_march(Marching* m){
-	marching_obj = m;
+	m_pMmarching = m;
 	return true;
 }
 
 bool Drawer::Get_poly_data()
 {
-	if (marching_obj == nullptr) return false;
-	bool ret = marching_obj->recalculate();
-	pData = marching_obj->get_poly_data();
+	if (m_pMmarching == nullptr) return false;
+	bool ret = m_pMmarching->recalculate();
+	pData = m_pMmarching->get_poly_data();
 	return ret;
 }
 
@@ -213,10 +221,21 @@ void Drawer::start(){
 
 void Drawer::SendData(float fGrid)
 {
-	marching_obj->set_grid_step_size(fGrid);
+	m_pMmarching->set_grid_step_size(fGrid);
 }
 
 void Drawer::NextStep()
 {
 
+}
+
+void Drawer::SetEquation(string s)
+{
+	if (m_pEvaluator)
+		m_pEvaluator->set_equation(s);	
+}
+
+void Drawer::set_evaluator(Evaluator* e)
+{
+	m_pEvaluator = e;
 }
