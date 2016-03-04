@@ -33,7 +33,6 @@ private:
 	Evaluator* evaluator;
 	float grid_step_size;
 	Poly_Data poly_data;
-	bool dirty;
 
 };
 

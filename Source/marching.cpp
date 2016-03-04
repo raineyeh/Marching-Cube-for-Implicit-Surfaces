@@ -5,15 +5,12 @@
 
 Marching::Marching(void){
 	this->grid_step_size = .2;
-	this->dirty = true;
 	this->evaluator = NULL;
-	
 }
 
 bool Marching::set_evaluator(Evaluator* e){
 	if (e){
 		evaluator = e;
-		dirty = true;
 		return true;
 	}
 	else 
@@ -32,7 +29,6 @@ float Marching::evaluate(float x, float y, float z){
 bool Marching::set_grid_step_size(float v){
 	if (v > 0 && v <= .5){
 		this->grid_step_size = v;
-		dirty = true;
 		return true;
 	}
 	else {
@@ -42,7 +38,6 @@ bool Marching::set_grid_step_size(float v){
 }
 
 bool Marching::recalculate(){
-	if (!this->dirty) return true;
 	this->poly_data.tri_list.empty();
 	this->poly_data.vertex_list.empty();
 
@@ -62,7 +57,6 @@ bool Marching::recalculate(){
 	//for (int i = 0; i < poly_data.tri_list.size(); i++)
 		//std::cout << poly_data.tri_list[i] << " ";
 
-	this->dirty = false;
 	return true;
 }
 
@@ -214,6 +208,5 @@ Poly_Data const * Marching::get_poly_data(){
 	poly_data.tri_list[4] = 2;
 	poly_data.tri_list[5] = 0;*/
 
-	if (this->dirty) this->recalculate();
 	return &this->poly_data;
 }
