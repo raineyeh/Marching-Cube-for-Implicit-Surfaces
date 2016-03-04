@@ -193,8 +193,8 @@ Drawer::Drawer(int* argc, char** argv){
 	glutPassiveMotionFunc(motion);
 	glutReshapeFunc(reshape);
 	glutIdleFunc(idle);	
-	m_pEvaluator = NULL;
-	m_pMmarching = NULL;
+	m_pEvaluator = nullptr;
+	m_pMmarching = nullptr;
 }
 
 bool Drawer::set_march(Marching* m){
@@ -205,9 +205,10 @@ bool Drawer::set_march(Marching* m){
 bool Drawer::Get_poly_data()
 {
 	if (m_pMmarching == nullptr) return false;
-	bool ret = m_pMmarching->recalculate();
-	pData = m_pMmarching->get_poly_data();
-	return ret;
+	m_pMmarching->recalculate();
+	if (pData == nullptr) 
+		pData = m_pMmarching->get_poly_data();
+	return pData != nullptr;
 }
 
 void Drawer::start(){
