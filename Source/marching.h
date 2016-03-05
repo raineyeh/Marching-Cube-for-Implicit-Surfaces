@@ -6,7 +6,7 @@
 #include "evaluator.h"
 
 struct Step_Data{
-	int step_i; //indicates which step this is at. 1~n*n: step count down. -1: finished, -2:not started
+	int step_i; //indicates which step this is at. 0~n*n: step count down. -1: finished, -2:not started
 	std::vector<float> corner_coords; //coordinate of the 4 vertices of the square. size=12
 	std::vector<float> corner_values; //values of the 4 corners. size=4
 	std::vector<float> intersect_coord; //intersection lines. size=2 if 1 line, 4 if 2 lines
