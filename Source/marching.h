@@ -7,7 +7,7 @@
 
 struct Step_Data{
 	int step_i; //indicates which step this is at. 1~n*n: step count down. 0: finished, -1:not started
-	std::vector<float> corner_coords; //coordinate of the 4 vertex of the square. size=8
+	std::vector<float> corner_coords; //coordinate of the 4 vertex of the square. size=12
 	std::vector<float> corner_values; //values of the 4 corners. size=4
 	std::vector<float> intersect_coord; //intersection lines. size=6 if 1 line, 12 if 2 lines
 };

@@ -6,7 +6,7 @@ float radius = .25;
 Marching::Marching(void){
 	this->grid_step_size = (float)0.2;
 	this->evaluator = NULL;
-	this->poly_data.step_data.corner_coords.resize(8);
+	this->poly_data.step_data.corner_coords.resize(12);
 	this->poly_data.step_data.corner_values.resize(4);
 }
 
