@@ -8,6 +8,7 @@ Marching::Marching(void){
 	this->evaluator = NULL;
 	this->poly_data.step_data.corner_coords.resize(12);
 	this->poly_data.step_data.corner_values.resize(4);
+	this->is_step_by_step = false;
 }
 
 bool Marching::set_evaluator(Evaluator* e){
@@ -54,15 +55,21 @@ bool Marching::recalculate(){
 				x_1 = x_0 + this->grid_step_size;
 		
 				this->do_square(x_0, x_1, y_0, y_1);
-				
+				add_step_to_poly_data();
 			}
 		}
 	}
 	else{
 		float x_0, x_1, y_0, y_1;
-		if (this->poly_data.step_data.step_i == 0) //finished already
+		if (this->poly_data.step_data.step_i == 0){ //last step 
+			add_step_to_poly_data();
+			this->poly_data.step_data.step_i = -1;
 			return true;
-		if (this->poly_data.step_data.step_i == -1){ //first step
+		}
+		if (this->poly_data.step_data.step_i == -1){ //finished
+			return false;
+		}
+		if (this->poly_data.step_data.step_i == -2){ //first step
 			x_0 = -1; y_0 = -1;
 
 			//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
@@ -87,8 +94,11 @@ bool Marching::recalculate(){
 		y_1 = y_0 + this->grid_step_size;
 
 		//cout << this->poly_data.step_data.step_i << " :";
-		if (this->poly_data.step_data.step_i>0)
+		if (this->poly_data.step_data.step_i > 0){
+			add_step_to_poly_data();
 			this->do_square(x_0, x_1, y_0, y_1);
+		}
+		
 	}
 
 	//for (int i = 0; i < poly_data.tri_list.size(); i++)
@@ -103,7 +113,7 @@ float interp(float x_s, float x_e, float v_s, float v_e){ //assumes interp zero
 }
 
 void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
-	cout << x_0 << " " << y_0 << " " << x_1 << " " << y_1 << endl;
+	//cout << x_0 << " " << y_0 << " " << x_1 << " " << y_1 << endl;
 	Step_Data* step = &this->poly_data.step_data;
 	step->corner_coords = { x_0, y_0, 0, x_1, y_0, 0, x_1, y_1, 0, x_0, y_1, 0 };
 	step->intersect_coord.clear();
@@ -147,7 +157,10 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 		//step->intersect_coord[2 * i] = x_interp;
 		//step->intersect_coord[2 * i + 1] = y_interp;
 	}
-	for (int i = 0; i < 4; i+=2){
+
+	//add_step_to_poly_data();
+	
+	/*for (int i = 0; i < 4; i+=2){
 		int line_pt = lines_edge[i];
 		int line_pt2 = lines_edge[i+1];
 		if (line_pt == -1) break;
@@ -155,8 +168,18 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 		int pi2 = add_point(step->intersect_coord[3 * (i+1)], step->intersect_coord[3 * (i+1) + 1], 0);
 		this->add_line(pi1, pi2);
 
-	}
+	}*/
 
+}
+
+void Marching::add_step_to_poly_data(){
+	Step_Data* step = &this->poly_data.step_data;
+	for (int i = 0; i < step->intersect_coord.size()/3; i +=2){
+		int pi1 = add_point(step->intersect_coord[3 * i], step->intersect_coord[3 * i + 1], 0);
+		int pi2 = add_point(step->intersect_coord[3 * (i + 1)], step->intersect_coord[3 * (i + 1) + 1], 0);
+		this->add_line(pi1, pi2);
+	}
+	
 }
 
 int Marching::add_point(float xval, float yval, float zval){
@@ -193,10 +216,10 @@ int Marching::add_line(int pi1, int pi2){
 
 void Marching::step_by_step_mode(bool mode){
 	this->is_step_by_step = mode;
-	this->poly_data.step_data.step_i = -1;
+	this->poly_data.step_data.step_i = -2;
 }
 void Marching::reset_step(){
-	this->poly_data.step_data.step_i = -1;
+	this->poly_data.step_data.step_i = -2;
 }
 
 Poly_Data const * Marching::get_poly_data(){
