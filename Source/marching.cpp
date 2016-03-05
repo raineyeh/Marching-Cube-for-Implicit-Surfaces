@@ -2,10 +2,12 @@
 #include "marching_lookup.h"
 #include <iostream>
 
-
+float radius = .25;
 Marching::Marching(void){
-	this->grid_step_size = .2;
+	this->grid_step_size = (float)0.2;
 	this->evaluator = NULL;
+	this->poly_data.step_data.corner_coords.resize(8);
+	this->poly_data.step_data.corner_values.resize(4);
 }
 
 bool Marching::set_evaluator(Evaluator* e){
@@ -19,6 +21,7 @@ bool Marching::set_evaluator(Evaluator* e){
 
 float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
+		//return abs(x + y) - radius;
 		return this->evaluator->evaluate(x, y, z);
 	}
 	else {
@@ -38,20 +41,54 @@ bool Marching::set_grid_step_size(float v){
 }
 
 bool Marching::recalculate(){
-	this->poly_data.tri_list.clear();
-	this->poly_data.vertex_list.clear();
+	if (!this->is_step_by_step){
+		radius -= .01;
 
-	float x_0, x_1, y_0, y_1;
-	for (x_0 = -1.0; x_0 < 1.0 ; x_0 += this->grid_step_size){
-		x_1 = x_0 + this->grid_step_size;
+		this->poly_data.tri_list.clear();
+		this->poly_data.vertex_list.clear();
+
+		float x_0, x_1, y_0, y_1;
 		for (y_0 = -1.0; y_0 < 1.0; y_0 += this->grid_step_size){
 			y_1 = y_0 + this->grid_step_size;
-
-			this->do_square(x_0, x_1, y_0, y_1);
+			for (x_0 = -1.0; x_0 < 1.0 ; x_0 += this->grid_step_size){
+				x_1 = x_0 + this->grid_step_size;
 		
+				this->do_square(x_0, x_1, y_0, y_1);
+				
+			}
+		}
+	}
+	else{
+		float x_0, x_1, y_0, y_1;
+		if (this->poly_data.step_data.step_i == 0) //finished already
+			return true;
+		if (this->poly_data.step_data.step_i == -1){ //first step
+			x_0 = -1; y_0 = -1;
+
+			//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
+			this->poly_data.step_data.step_i = 0;
+			for (float x0 = -1.0 ; x0 < 1.0; x0 += this->grid_step_size)
+				this->poly_data.step_data.step_i++;
+			//cout << "one side: " << this->poly_data.step_data.step_i << endl;
+			this->poly_data.step_data.step_i *= this->poly_data.step_data.step_i;
 
 		}
-		
+		else{
+			x_0 = this->poly_data.step_data.corner_coords[3]; //x_1 from last step 
+			y_0 = this->poly_data.step_data.corner_coords[4]; //x_2 from last step
+			if (x_0 >= 1.0){
+				x_0 = -1;
+				y_0 += this->grid_step_size;
+			}
+			this->poly_data.step_data.step_i--;
+		}
+
+		x_1 = x_0 + this->grid_step_size;
+		y_1 = y_0 + this->grid_step_size;
+
+		//cout << this->poly_data.step_data.step_i << " :";
+		if (this->poly_data.step_data.step_i>0)
+			this->do_square(x_0, x_1, y_0, y_1);
 	}
 
 	//for (int i = 0; i < poly_data.tri_list.size(); i++)
@@ -66,27 +103,31 @@ float interp(float x_s, float x_e, float v_s, float v_e){ //assumes interp zero
 }
 
 void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
-	float corner_coords[8] = { x_0, y_0, x_1, y_0, x_1, y_1, x_0, y_1 };
-	float corner_values[4];
-	float intersect_coord[8] = { 0 };
+	cout << x_0 << " " << y_0 << " " << x_1 << " " << y_1 << endl;
+	Step_Data* step = &this->poly_data.step_data;
+	step->corner_coords = { x_0, y_0, 0, x_1, y_0, 0, x_1, y_1, 0, x_0, y_1, 0 };
+	step->intersect_coord.clear();
+	//float corner_coords[8] = { x_0, y_0, x_1, y_0, x_1, y_1, x_0, y_1 };
+	//float corner_values[4];
+	//float intersect_coord[8] = { 0 };
 	//int edge_pt_count = 0;
 
 	for (int i = 0; i < 4; i++)
-		corner_values[i] = this->evaluate(corner_coords[2 * i], corner_coords[2 * i + 1], 0);
+		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], 0);
 
 	int square_index = 0;
-	if (corner_values[0] > 0) square_index |= 1;
-	if (corner_values[1] > 0) square_index |= 2;
-	if (corner_values[2] > 0) square_index |= 4;
-	if (corner_values[3] > 0) square_index |= 8;
+	if (step->corner_values[0] > 0) square_index |= 1;
+	if (step->corner_values[1] > 0) square_index |= 2;
+	if (step->corner_values[2] > 0) square_index |= 4;
+	if (step->corner_values[3] > 0) square_index |= 8;
 
 	int* lines_edge = line_table[square_index];
 	int alternative_idx = ambiguous_line_table_redirect[square_index];
 	if (alternative_idx != -1){ //ambiguous case
 		float midx = 0, midy = 0;
 		for (int i = 0; i < 4; i++){
-			midx += corner_coords[i * 2];
-			midy += corner_coords[(i + 1) * 2];
+			midx += step->corner_coords[i * 3];
+			midy += step->corner_coords[i* 3+1];
 		}
 		midx /= 4.0; midy /= 4.0;
 		float mid_val = this->evaluate(midx, midy, 0);
@@ -96,56 +137,25 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 	for (int i = 0; i < 4; i ++){
 		int line_pt = lines_edge[i];
 		if (line_pt == -1) break;
-		int vi1 = 2*line_pt;
-		int vi2 = 2*((line_pt + 1) % 4);
-		float x_interp = interp(corner_coords[vi1], corner_coords[vi2], corner_values[line_pt], corner_values[(line_pt + 1) % 4]);
-		float y_interp = interp(corner_coords[vi1 + 1], corner_coords[vi2 + 1], corner_values[line_pt], corner_values[(line_pt + 1) % 4]);
-		intersect_coord[2 * i] = x_interp;
-		intersect_coord[2 * i + 1] = y_interp;
+		int vi1 = 3*line_pt;
+		int vi2 = 3*((line_pt + 1) % 4);
+		float x_interp = interp(step->corner_coords[vi1], step->corner_coords[vi2], step->corner_values[line_pt], step->corner_values[(line_pt + 1) % 4]);
+		float y_interp = interp(step->corner_coords[vi1 + 1], step->corner_coords[vi2 + 1], step->corner_values[line_pt], step->corner_values[(line_pt + 1) % 4]);
+		step->intersect_coord.push_back(x_interp);
+		step->intersect_coord.push_back(y_interp);
+		step->intersect_coord.push_back(0); //z
+		//step->intersect_coord[2 * i] = x_interp;
+		//step->intersect_coord[2 * i + 1] = y_interp;
 	}
-	for (int i = 0; i < 2; i+=2){
+	for (int i = 0; i < 4; i+=2){
 		int line_pt = lines_edge[i];
 		int line_pt2 = lines_edge[i+1];
 		if (line_pt == -1) break;
-		int pi1 = add_point(intersect_coord[2 * i], intersect_coord[2 * i + 1], 0);
-		int pi2 = add_point(intersect_coord[2 * (i+1)], intersect_coord[2 * (i+1) + 1], 0);
+		int pi1 = add_point(step->intersect_coord[3 * i], step->intersect_coord[3 * i + 1], 0);
+		int pi2 = add_point(step->intersect_coord[3 * (i+1)], step->intersect_coord[3 * (i+1) + 1], 0);
 		this->add_line(pi1, pi2);
 
 	}
-
-
-
-
-	/*
-	for (int i1 = 0, i2 = 1; i1 < 4; i1++, i2 = (i1 + 1) % 4){
-		float mult_result = corner_values[i1] * corner_values[i2];
-		if (mult_result <= 0 && corner_values[i1] != corner_values[i2]) {
-			//sign mismatch, and not both are zero
-			float x_s = corner_coords[2 * i1], x_e = corner_coords[2 * i2];
-			float y_s = corner_coords[2 * i1 + 1], y_e = corner_coords[2 * i2 + 1];
-			float v_s = corner_values[i1], v_e = corner_values[i2];
-			intersect_coord[2 * edge_pt_count] = x_s + (-v_s / (v_e - v_s)) * (x_e - x_s);//x intersect
-			intersect_coord[2 * edge_pt_count + 1] = y_s + (-v_s / (v_e - v_s)) * (y_e - y_s);//y intersect
-			edge_pt_count++;
-		}
-
-	}*/
-
-	/*
-	if (edge_pt_count == 2){
-		this->add_line(intersect_coord[0], intersect_coord[1], intersect_coord[2], intersect_coord[3]);
-	}
-	else if (edge_pt_count == 4){
-		float mid_pt1[2] = { (intersect_coord[0] + intersect_coord[2]) / 2, (intersect_coord[1] + intersect_coord[3]) / 2 };
-		float mid_pt2[2] = { (intersect_coord[4] + intersect_coord[6]) / 2, (intersect_coord[5] + intersect_coord[7]) / 2 };
-		float mid_of_mid[2] = { (mid_pt1[0] + mid_pt2[0]) / 2, (mid_pt1[1] + mid_pt2[1]) / 2 };
-		float mid_val = this->evaluate(mid_of_mid[0], mid_of_mid[1], 0);
-		float mult_result = mid_val * corner_values[0];
-		if (mult_result > 0){ //sign matching first pt
-			this->add_line(intersect_coord[0], intersect_coord[1], intersect_coord[2], intersect_coord[3]);
-			this->add_line(intersect_coord[4], intersect_coord[5], intersect_coord[6], intersect_coord[7]);
-		}
-	}*/
 
 }
 
@@ -181,6 +191,13 @@ int Marching::add_line(int pi1, int pi2){
 
 }
 
+void Marching::step_by_step_mode(bool mode){
+	this->is_step_by_step = mode;
+	this->poly_data.step_data.step_i = -1;
+}
+void Marching::reset_step(){
+	this->poly_data.step_data.step_i = -1;
+}
 
 Poly_Data const * Marching::get_poly_data(){
 	
