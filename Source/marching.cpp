@@ -38,8 +38,8 @@ bool Marching::set_grid_step_size(float v){
 }
 
 bool Marching::recalculate(){
-	this->poly_data.tri_list.empty();
-	this->poly_data.vertex_list.empty();
+	this->poly_data.tri_list.clear();
+	this->poly_data.vertex_list.clear();
 
 	float x_0, x_1, y_0, y_1;
 	for (x_0 = -1.0; x_0 < 1.0 ; x_0 += this->grid_step_size){
