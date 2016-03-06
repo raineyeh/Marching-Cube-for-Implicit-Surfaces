@@ -31,8 +31,11 @@ float Marching::evaluate(float x, float y, float z){
 }
 
 bool Marching::set_grid_step_size(float v){
-	if (v > 0 && v <= .5){
-		this->grid_step_size = v;
+	if (v >= 0.001 && v <= .5){
+		if (v != grid_step_size){
+			this->grid_step_size = v;
+			reset_step();
+		}
 		return true;
 	}
 	else {
@@ -41,9 +44,21 @@ bool Marching::set_grid_step_size(float v){
 
 }
 
+
+void Marching::step_by_step_mode(bool mode){
+	this->is_step_by_step = mode;
+	
+}
+
+void Marching::reset_step(){
+	this->poly_data.step_data.step_i = -2;
+}
+
 bool Marching::recalculate(){
 	if (!this->is_step_by_step){
 		radius -= .01;
+
+		this->poly_data.step_data.step_i = -2;
 
 		this->poly_data.tri_list.clear();
 		this->poly_data.vertex_list.clear();
@@ -66,7 +81,7 @@ bool Marching::recalculate(){
 			this->poly_data.step_data.step_i = -1;
 			return true;
 		}
-		if (this->poly_data.step_data.step_i == -1){ //finished
+		if (this->poly_data.step_data.step_i == -1){ //finished steps already. no updates
 			return false;
 		}
 		if (this->poly_data.step_data.step_i == -2){ //first step
@@ -214,13 +229,6 @@ int Marching::add_line(int pi1, int pi2){
 
 }
 
-void Marching::step_by_step_mode(bool mode){
-	this->is_step_by_step = mode;
-	this->poly_data.step_data.step_i = -2;
-}
-void Marching::reset_step(){
-	this->poly_data.step_data.step_i = -2;
-}
 
 Poly_Data const * Marching::get_poly_data(){
 	

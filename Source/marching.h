@@ -25,7 +25,7 @@ class Marching
 public:
 	Marching(void);
 	bool set_evaluator(Evaluator*);
-	bool set_grid_step_size(float);
+	bool set_grid_step_size(float);	// must be between [0.001,0.5]. Changing this will reset step in step_by_step_mode.
 	void step_by_step_mode(bool);
 	void reset_step();
 	Poly_Data const * get_poly_data();
