@@ -29,7 +29,7 @@ public:
 	void step_by_step_mode(bool);
 	void reset_step();
 	Poly_Data const * get_poly_data();
-	bool recalculate();
+	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
 	
 
 private:
