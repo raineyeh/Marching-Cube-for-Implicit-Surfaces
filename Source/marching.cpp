@@ -22,7 +22,7 @@ bool Marching::set_evaluator(Evaluator* e){
 
 float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
-		//return abs(x + y) - radius;
+		return abs(x + y) - radius;
 		return this->evaluator->evaluate(x, y, z);
 	}
 	else {
@@ -172,18 +172,6 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1){
 		//step->intersect_coord[2 * i] = x_interp;
 		//step->intersect_coord[2 * i + 1] = y_interp;
 	}
-
-	//add_step_to_poly_data();
-	
-	/*for (int i = 0; i < 4; i+=2){
-		int line_pt = lines_edge[i];
-		int line_pt2 = lines_edge[i+1];
-		if (line_pt == -1) break;
-		int pi1 = add_point(step->intersect_coord[3 * i], step->intersect_coord[3 * i + 1], 0);
-		int pi2 = add_point(step->intersect_coord[3 * (i+1)], step->intersect_coord[3 * (i+1) + 1], 0);
-		this->add_line(pi1, pi2);
-
-	}*/
 
 }
 

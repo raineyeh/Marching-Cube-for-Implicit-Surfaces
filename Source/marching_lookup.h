@@ -21,7 +21,7 @@ int line_table[][4] = {
 };
 
 int ambiguous_line_table_redirect[] = { // if midpoint is neg (does not match v0), then use the new lookup value
-	-1, -1, -1, -1, -1, 5, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1
+	-1, -1, -1, -1, -1, 10, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1
 };
 
 
