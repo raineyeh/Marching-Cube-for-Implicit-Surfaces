@@ -55,7 +55,7 @@ void draw_gui()
 			pDrawer->SetGridSize(fGrid);
 	}
 	if (ImGui::Button("Refresh") && pDrawer){			
-	//	pDrawer->SetEquation(string(buf));
+		pDrawer->SetEquation(string(buf));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Get_poly_data();
 
