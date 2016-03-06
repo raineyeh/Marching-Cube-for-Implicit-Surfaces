@@ -23,6 +23,9 @@ int windowID = -1;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
+static char buf[256] = "x^2+y^2-0.5";
+static float fGrid = 0.2f;
+static bool bMode = false;
 GLuint shader_program = -1;
 GLuint vao = -1 ;
 glm::mat4 P;
@@ -45,32 +48,30 @@ void draw_gui()
 	ImGui::SetWindowSize(wsize);
 	ImVec2 wpos(windowWidth - barwidth, 0);
 	ImGui::SetWindowPos(wpos);
-	static char buf[256] = "x^2 + y^2";
-	static float fGrid = 0.2f;
 	
 	ImGui::InputText("Polynomial", buf, 256, 0);
 	if (ImGui::SliderFloat("Grid size", &fGrid, 0.05f, 0.5f)){
 		if (pDrawer)
-			pDrawer->SendData(fGrid);
+			pDrawer->SetGridSize(fGrid);
 	}
-	if (ImGui::Button("Finish") && pDrawer && pDrawer->Get_poly_data() && pData &&
-		!pData->tri_list.empty() && !pData->vertex_list.empty()){			
-		pDrawer->SetEquation(string(buf));
-		drawbuffer(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
-			(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);		
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Next Step")){
-		if (pDrawer)
-			pDrawer->NextStep();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Movie")){
+	if (ImGui::Button("Refresh") && pDrawer){			
+	//	pDrawer->SetEquation(string(buf));
+		pDrawer->SetGridSize(fGrid);
+		pDrawer->Get_poly_data();
+
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			drawbuffer(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
+				(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Clear")){
-		drawbuffer(0, 0, nullptr, nullptr);		
+		drawbuffer(0, 0, nullptr, nullptr);
 	}
+	if (ImGui::Checkbox("Step Mode",&bMode)){
+		if (pDrawer)
+			pDrawer->SetStepMode(bMode);
+	}	
+	
 	ImGui::Render();
 	hasInit = true;
 	
@@ -103,7 +104,8 @@ void display()
 // glut callbacks need to send keyboard and mouse events to imgui
 void keyboard(unsigned char key, int x, int y)
 {
-	ImGui_ImplGlut_KeyCallback(key);	
+	ImGui_ImplGlut_KeyCallback(key);
+	
 }
 
 void keyboard_up(unsigned char key, int x, int y)
@@ -124,6 +126,16 @@ void passive(int x, int y)
 void special(int key, int x, int y)
 {
 	ImGui_ImplGlut_SpecialCallback(key);
+	switch (key)
+	{
+	case GLUT_KEY_RIGHT:	
+		if (pDrawer)
+			pDrawer->Get_poly_data();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			drawbuffer(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
+			(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);
+		break;
+	}	
 }
 
 void motion(int x, int y)
@@ -204,7 +216,9 @@ bool Drawer::set_march(Marching* m){
 
 bool Drawer::Get_poly_data()
 {
-	if (m_pMmarching == nullptr) return false;
+	if (m_pMmarching == nullptr) 
+		return false;
+
 	m_pMmarching->recalculate();
 	if (pData == nullptr) 
 		pData = m_pMmarching->get_poly_data();
@@ -220,14 +234,16 @@ void Drawer::start(){
 	int a = 0;
 }
 
-void Drawer::SendData(float fGrid)
+void Drawer::SetGridSize(float fGrid)
 {
-	m_pMmarching->set_grid_step_size(fGrid);
+	if (m_pMmarching)
+		m_pMmarching->set_grid_step_size(fGrid);
 }
 
-void Drawer::NextStep()
+void Drawer::SetStepMode(bool mode)
 {
-
+	if (m_pMmarching)
+		m_pMmarching->step_by_step_mode(mode);
 }
 
 void Drawer::SetEquation(string s)

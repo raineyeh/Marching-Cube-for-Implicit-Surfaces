@@ -7,8 +7,8 @@ public:
 	void set_evaluator(Evaluator*);
 	bool Get_poly_data();
 	void start();
-	void SendData(float);
-	void NextStep();
+	void SetGridSize(float);
+	void SetStepMode(bool);
 	void SetEquation(string);
 private:
 	Marching* m_pMmarching;
