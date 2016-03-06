@@ -22,7 +22,7 @@ bool Marching::set_evaluator(Evaluator* e){
 
 float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
-		return abs(x + y) - radius;
+		//return abs(x + y) - radius;
 		return this->evaluator->evaluate(x, y, z);
 	}
 	else {
