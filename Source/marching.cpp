@@ -67,7 +67,7 @@ bool Marching::recalculate(){
 		this->poly_data.vertex_list.clear();
 
 		float x_0, x_1, y_0, y_1, z_0, z_1;
-		for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size){ //MODDDD!!
+		for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size){ 
 			z_1 = z_0 + this->grid_step_size;
 			for (y_0 = -1.0; y_0 < 1.0; y_0 += this->grid_step_size){
 				y_1 = y_0 + this->grid_step_size;
@@ -91,6 +91,11 @@ bool Marching::recalculate(){
 			return false;
 		}
 		if (this->poly_data.step_data.step_i == -2){ //first step
+			this->poly_data.tri_list.clear();
+			this->poly_data.vertex_list.clear();
+			this->poly_data.step_data.intersect_coord.clear();
+			this->poly_data.step_data.tri_vlist.clear();
+			
 			x_0 = -1; y_0 = -1; z_0 = -1;
 
 			//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
