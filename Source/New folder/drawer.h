@@ -5,7 +5,7 @@ public:
 	Drawer(int*, char**);
 	bool set_march(Marching*);
 	void set_evaluator(Evaluator*);
-	bool GetPolyData();
+	bool Get_poly_data();
 	void start();
 	void SetGridSize(float);
 	void SetStepMode(bool);

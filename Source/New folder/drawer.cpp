@@ -28,25 +28,23 @@ static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char buf[256] = "x^2+y^2-0.5";
 static float fGrid = 0.2f;
 static bool bStepMode = false;
+GLuint shader_program = -1;
+GLuint vao = -1 ;
+Drawer* pDrawer = nullptr;
 bool hasInit = false;
 bool pressed = false;
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
-GLuint shader_program = -1;
-GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
-glm::mat4 M,V,P;
+glm::mat4 V;
+glm::mat4 M;
+glm::mat4 P;
 MyFile myfile;
-Drawer* pDrawer = nullptr;
-vector<float> vIntersectVertex, vIntersectIndex;
-//cube idx
-unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 4, 7, 4, 3, 0, 4, 5, 6, 6, 7, 4 };
-unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
-void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){	
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+void BufferData(int ni,int nv,void* pi,void* pv){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 void DrawGUI()
 {	
@@ -65,14 +63,16 @@ void DrawGUI()
 	if (ImGui::Button("Refresh") && pDrawer){			
 	//	pDrawer->SetEquation(string(buf));
 		pDrawer->SetGridSize(fGrid);
-		pDrawer->GetPolyData();
+		pDrawer->Get_poly_data();
+
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-					   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);		
+			BufferData(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
+				(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
-// 	if (ImGui::Button("Clear")){		
-// 	}
+	if (ImGui::Button("Clear")){
+		BufferData(0, 0, nullptr, nullptr);
+	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load File")){
 		myfile.Open();
@@ -80,8 +80,9 @@ void DrawGUI()
 	if (ImGui::Checkbox("Step Mode",&bStepMode)){
 		if (pDrawer)
 			pDrawer->SetStepMode(bStepMode);
-	}	
-	char ch[15] = {0};
+	}
+	
+	char ch[10] = {0};
 	if (pData)
 		sprintf_s(ch, "Steps:%d", pData->step_data.step_i);
 	ImGui::LabelText("", ch);	
@@ -124,63 +125,28 @@ void Arcball() {
 	}
 }
 void DrawCube(){
-	if (!bStepMode) return;	
-	if (pData == nullptr) return;
-	if (pData->step_data.corner_coords.empty()) return;	
-	int color_loc = glGetUniformLocation(shader_program, "ucolor");
-	if (color_loc == -1) return;
-
-	//cube	
-	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);
-	glm::vec4 color = glm::vec4(0.0f, 0.0f, 1.0f, 0.2f);
-	glUniform4fv(color_loc, 1, glm::value_ptr(color));
-	glBindVertexArray(vao[1]);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+	if (!bStepMode) return;
 	
 	
-	//edge
-	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
-	color = glm::vec4(0.5f, 0.5f, 0.5f, 0.8f);
-	glUniform4fv(color_loc, 1, glm::value_ptr(color));
-	glBindVertexArray(vao[1]);
-	glDrawElements(GL_LINE_STRIP, 30, GL_UNSIGNED_INT, 0);
-	
-	//corner	
-	int n = 0;
-	for (auto p : pData->step_data.corner_values){
-		color = p < 0 ? glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) : glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-		glUniform4fv(color_loc, 1, glm::value_ptr(color));
-		glDrawArrays(GL_POINTS, n++, 1);		
-	}
-		
-	//intersect	
-	glBindVertexArray(vao[2]);
-	color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-	glUniform4fv(color_loc, 1, glm::value_ptr(color));
-	glDrawArrays(GL_POINTS, 0, vIntersectVertex.size() / 3);
-		
-	glBindVertexArray(0);	
 }
-void DrawModel(){	
+void DrawModel(){
+	glClear(GL_COLOR_BUFFER_BIT);
+	glUseProgram(shader_program);
+
 	int color_loc = glGetUniformLocation(shader_program, "ucolor");
 	glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	if (color_loc != -1)
 		glUniform4fv(color_loc, 1, glm::value_ptr(color));
 
 	if (pData){
-		glBindVertexArray(vao[0]);
+		glBindVertexArray(vao);
 		glDrawElements(GL_LINES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}	
 }
 void display()
 {
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(shader_program);
-
 	Arcball();
-	DrawCube();
 	DrawModel();
 	DrawGUI();
 	glutSwapBuffers();
@@ -209,36 +175,14 @@ void passive(int x, int y)
 void special(int key, int x, int y)
 {
 	ImGui_ImplGlut_SpecialCallback(key);
-	if (bStepMode == false) return;
 	switch (key)
 	{
 	case GLUT_KEY_RIGHT:	
-		if (pDrawer) pDrawer->GetPolyData();
-		if (pData == nullptr) break;
-
-		//model
-		if (!pData->tri_list.empty() && !pData->vertex_list.empty()){
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-				vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);			
-		}	
-		
-		//cube
-		BufferData(0, 0, 0,vbo[1], pData->step_data.corner_coords.size()*sizeof(float), (void*)&pData->step_data.corner_coords[0]);
-		
-		//Intersect
-		vIntersectVertex.clear();
-		int num = pData->step_data.intersect_coord.size();
-		for (int i = 0; i < num / 3; i++){
-			if (pData->step_data.intersect_coord[i * 3] != pData->step_data.intersect_coord[i * 3])
-				continue;
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3]);
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3 + 1]);
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3 + 2]);			
-		}
-		if (vIntersectVertex.size()>0){
-			BufferData(0, 0, 0, vbo[2], vIntersectVertex.size()*sizeof(float), (void*)&vIntersectVertex[0]);
-		}
-		
+		if (pDrawer)
+			pDrawer->Get_poly_data();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			BufferData(pData->tri_list.size()*sizeof(unsigned int), pData->vertex_list.size()*sizeof(float),
+			(void*)&pData->tri_list[0], (void*)&pData->vertex_list[0]);
 		break;
 	}	
 }
@@ -279,10 +223,12 @@ void reshape(int w, int h)
 void reload_shader()
 {
 	GLuint new_shader = InitShader(vertex_shader.c_str(), fragment_shader.c_str());
-	if (new_shader == -1) {// loading failed	
+	if (new_shader == -1) // loading failed
+	{
 		glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
 	}
-	else{
+	else
+	{
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		if (shader_program != -1)
 		{
@@ -294,12 +240,7 @@ void reload_shader()
 void InitMatrix(){
 	M = glm::mat4(1.0f);
 	V = glm::lookAt(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	P = glm::perspective(45.0f, 1.0f, 0.1f, 100.0f);	
-}
-void InitBuffer(){	
-	for (int i = 0; i < 3;i++){
-		CreateBuffer(shader_program,vao[i],vbo[i],ibo[i]);
-	}	
+	P = glm::perspective(45.0f, 1.0f, 0.1f, 100.0f);
 }
 Drawer::Drawer(int* argc, char** argv){
 
@@ -313,11 +254,11 @@ Drawer::Drawer(int* argc, char** argv){
 
 	glewInit();
 	ImGui_ImplGlut_Init();
-	reload_shader();	
+	reload_shader();
+	init_buffer();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glLineWidth(2.0);
-	glPointSize(8.0);
 	/* Callback functions */
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
@@ -330,7 +271,6 @@ Drawer::Drawer(int* argc, char** argv){
 	glutReshapeFunc(reshape);
 	glutIdleFunc(idle);	
 	InitMatrix();
-	InitBuffer();
 	m_pEvaluator = nullptr;
 	m_pMmarching = nullptr;		
 }
@@ -340,7 +280,7 @@ bool Drawer::set_march(Marching* m){
 	return true;
 }
 
-bool Drawer::GetPolyData()
+bool Drawer::Get_poly_data()
 {
 	if (m_pMmarching == nullptr) 
 		return false;

@@ -20,6 +20,7 @@
     <ClCompile Include="..\..\Source\InitShader.cpp" />
     <ClCompile Include="..\..\Source\main.cpp" />
     <ClCompile Include="..\..\Source\marching.cpp" />
+    <ClCompile Include="..\..\Source\MyFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Dependencies\imgui\imconfig.h" />
@@ -34,6 +35,7 @@
     <ClInclude Include="..\..\Source\InitShader.h" />
     <ClInclude Include="..\..\Source\marching.h" />
     <ClInclude Include="..\..\Source\marching_lookup.h" />
+    <ClInclude Include="..\..\Source\MyFile.h" />
     <ClInclude Include="..\..\Source\vao.h" />
   </ItemGroup>
   <ItemGroup>
