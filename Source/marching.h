@@ -9,7 +9,7 @@ struct Step_Data{
 	int step_i; //indicates which step this is at. 0~n*n: step count down. -1: finished, -2:not started
 	std::vector<float> corner_coords; //coordinate of the 8 vertices of the cube. size=24
 	std::vector<float> corner_values; //values of the 8 corners. size=8
-	std::vector<float> intersect_coord; //intersection coordinate for each edge if there is intersection. NAN otherwise. size = 36
+	std::vector<float> intersect_coord; //intersection coordinate for each edge. size = 3* number of intersect points
 	std::vector<int> tri_vlist; //vertex list of the triangles. size = 3*num_triangles. max_num_tri = 5
 };
 

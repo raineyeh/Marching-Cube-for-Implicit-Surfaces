@@ -25,7 +25,7 @@ bool Marching::set_evaluator(Evaluator* e){
 
 float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
-		return abs(x*x + y*y ) - radius ;
+		//return abs(x*x + y*y ) - radius ;
 		return this->evaluator->evaluate(x, y, z);
 	}
 	else {
@@ -147,7 +147,9 @@ float interp(float x_s, float x_e, float v_s, float v_e){ //assumes interp zero
 void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,float z_1){
 	//cout << x_0 << " " << y_0 << " " << x_1 << " " << y_1 << endl;
 	Step_Data* step = &this->poly_data.step_data;
+	step->intersect_coord.clear();
 	step->tri_vlist.clear();
+
 	step->corner_coords = { x_0, y_0, z_0, x_1, y_0, z_0, x_1, y_1, z_0, x_0, y_1, z_0, 
 		x_0, y_0, z_1, x_1, y_0, z_1, x_1, y_1, z_1, x_0, y_1, z_1 };
 	
@@ -183,6 +185,7 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 	}*/
 
 	// calculate intersection coordinates
+	
 	step->intersect_coord.resize(36, NAN);
 	for (int ei = 0; ei < 12; ei++){
 		int v1 = cube_edge_vertex_table[ei][0];
@@ -212,6 +215,25 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 		step->tri_vlist.push_back(v3);
 	}
 
+	//get rid of the NaN points because someone downstream is real lazy.
+	int pi = 0;
+	for (int i = 0; i < step->intersect_coord.size()/3; i++){
+		if (!isnan(step->intersect_coord[i * 3])){
+			step->intersect_coord[pi * 3] = step->intersect_coord[i * 3];
+			step->intersect_coord[pi * 3+1] = step->intersect_coord[i * 3+1];
+			step->intersect_coord[pi * 3+2] = step->intersect_coord[i * 3+2];
+			//replace
+			for (int j = 0; j < step->tri_vlist.size(); j++){
+				if (step->tri_vlist[j] == i)
+					step->tri_vlist[j] = pi;
+			}
+			pi++;
+		}
+
+	}
+	cout << "pi:" << pi << endl;
+	step->intersect_coord.resize(pi*3);
+	
 }
 
 void Marching::add_step_to_poly_data(){
