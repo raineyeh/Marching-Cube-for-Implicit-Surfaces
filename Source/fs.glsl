@@ -4,7 +4,7 @@ in vec3 fColor;
 uniform float time;   
 uniform vec4 ucolor;      
 uniform int uTranslucent;
-vec3 l_pos = vec3(0.0, 0.0, 20.0); //world space light pos
+vec3 l_pos = vec3(10.0, 10.0, 20.0); //world space light pos
 vec4 ks = vec4(0.5, 0.5, 0.5, 1.0); // material specular color
 vec4 kd = vec4(0.9f, 0.5f, 0.3,1.0);
 

@@ -42,10 +42,10 @@
     <ClCompile Include="..\..\Dependencies\imgui\imgui_impl_glut.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\InitShader.cpp">
+    <ClCompile Include="..\..\Source\MyFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\MyFile.cpp">
+    <ClCompile Include="..\..\Source\glslprogram.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -86,10 +86,10 @@
     <ClInclude Include="..\..\Source\vao.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\InitShader.h">
+    <ClInclude Include="..\..\Source\MyFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\MyFile.h">
+    <ClInclude Include="..\..\Source\glslprogram.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
