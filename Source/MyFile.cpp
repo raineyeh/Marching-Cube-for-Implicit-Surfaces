@@ -12,7 +12,7 @@ vector<int> MyFile::Open()
 	vector<int> vPoint;	
 	FILE *fp;
 	OPENFILENAME ofn;
-	TCHAR	szFile[MAX_PATH] = "points.txt";
+	TCHAR	szFile[MAX_PATH] = "mesh.poly";
 	TCHAR	szTitle[MAX_PATH] = "points";
 	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*0";
 	ofn.lStructSize = sizeof (OPENFILENAME);
@@ -31,7 +31,7 @@ vector<int> MyFile::Open()
 	ofn.Flags = OFN_ALLOWMULTISELECT | OFN_EXPLORER;//位标记的设置 
 	ofn.nFileOffset = 0;
 	ofn.nFileExtension = 0;
-	ofn.lpstrDefExt = TEXT("txt");
+	ofn.lpstrDefExt = TEXT("poly");
 	ofn.lCustData = 0L;
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
@@ -53,11 +53,11 @@ vector<int> MyFile::Open()
 	return vPoint;
 }
 
-bool MyFile::Save(vector<int> vPoint)
+bool MyFile::Save(const Poly_Data* data)
 {
 	FILE *fp;
 	OPENFILENAME ofn;
-	TCHAR	szFile[MAX_PATH] = "points.txt";
+	TCHAR	szFile[MAX_PATH] = "*.poly";
 	TCHAR	szTitle[MAX_PATH] = "points";
 	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*0";
 	ofn.lStructSize = sizeof (OPENFILENAME);
@@ -76,7 +76,7 @@ bool MyFile::Save(vector<int> vPoint)
 	ofn.Flags = OFN_ALLOWMULTISELECT | OFN_EXPLORER;//位标记的设置 
 	ofn.nFileOffset = 0;
 	ofn.nFileExtension = 0;
-	ofn.lpstrDefExt = TEXT("txt");
+	ofn.lpstrDefExt = TEXT("poly");
 	ofn.lCustData = 0L;
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
@@ -84,10 +84,6 @@ bool MyFile::Save(vector<int> vPoint)
 	errno_t err = fopen_s(&fp, ofn.lpstrFile, "w");
 	
 	if (NULL == fp) return false;
-
-	int num = vPoint.size();
-	char buffer[50];
-	sprintf_s(buffer, "%d", num);
 	
 	
 	fclose(fp);

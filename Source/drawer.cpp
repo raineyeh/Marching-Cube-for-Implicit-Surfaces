@@ -3,6 +3,7 @@
 #include "imgui_impl_glut.h"
 #include <algorithm>
 #include <memory>
+#include <process.h> 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <GL/gl.h>
@@ -26,8 +27,10 @@ const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char buf[256] = "x^2+y^2-0.5";
-static float fGrid = 0.2f;
+static float fGrid = 0.25f;
+static float fInterval = 0.2f;
 static bool bStepMode = false;
+static bool bTranslucent = false;
 bool hasInit = false;
 bool pressed = false;
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
@@ -40,6 +43,7 @@ vector<float> vIntersectVertex, vIntersectIndex;
 //cube idx
 unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 4, 7, 4, 3, 0, 4, 5, 6, 6, 7, 4 };
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
+
 void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){	
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
@@ -48,6 +52,41 @@ void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
+void SetStepData(){
+	//model
+	if (!pData->tri_list.empty() && !pData->vertex_list.empty()){
+		BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+	}
+
+	//cube
+	BufferData(0, 0, 0, vbo[1], pData->step_data.corner_coords.size()*sizeof(float), (void*)&pData->step_data.corner_coords[0]);
+
+	//Intersect	
+	int num = pData->step_data.intersect_coord.size();
+	if (num > 0){
+		BufferData(0, 0, 0, vbo[2], pData->step_data.intersect_coord.size()*sizeof(float), (void*)&pData->step_data.intersect_coord[0]);
+	}
+}
+void Movie(void*)
+{		
+	if (pDrawer == nullptr) return;	
+	pDrawer->ResetStep();
+	pDrawer->SetStepMode(true);
+	bStepMode = true;
+//	pDrawer->SetEquation(string(buf));
+	pDrawer->SetGridSize(fGrid);
+	pDrawer->GetPolyData();
+	for (int i = 0; pData && i != pData->step_data.step_i;){
+		pDrawer->GetPolyData();
+		SetStepData();	
+		Sleep(50);		
+	}	
+	pDrawer->SetStepMode(false);
+	bStepMode = false;
+	_endthread();
+}
+
 void DrawGUI()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
@@ -58,7 +97,12 @@ void DrawGUI()
 	ImGui::SetWindowPos(wpos);
 	
 	ImGui::InputText("Polynomial", buf, 256, 0);
-	if (ImGui::SliderFloat("Grid size", &fGrid, 0.05f, 0.5f)){
+	if (ImGui::SliderFloat("Grid size", &fGrid, 0.1f, 0.5f)){
+		if (pDrawer)
+			pDrawer->SetGridSize(fGrid);
+	}
+
+	if (ImGui::SliderFloat("Level set", &fInterval, 0.1f, 0.5f)){
 		if (pDrawer)
 			pDrawer->SetGridSize(fGrid);
 	}
@@ -71,20 +115,45 @@ void DrawGUI()
 					   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
-// 	if (ImGui::Button("Clear")){		
-// 	}
+	if (ImGui::Button("Movie")){		
+		_beginthread(Movie, 0, 0);		
+	}
 	ImGui::SameLine();
-	if (ImGui::Button("Load File")){
+	if (ImGui::Button("Reset")){	
+		if (pDrawer)
+			pDrawer->ResetStep();
+	}	
+	if (ImGui::Button("Save mesh")){		
+		myfile.Save(pData);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Load mesh")){
 		myfile.Open();
 	}
 	if (ImGui::Checkbox("Step Mode",&bStepMode)){
 		if (pDrawer)
 			pDrawer->SetStepMode(bStepMode);
-	}	
+	}ImGui::SameLine();
+	if (ImGui::Checkbox("Translucent", &bTranslucent)){
+		if (bTranslucent)
+			glDisable(GL_DEPTH_TEST); 
+		else
+			glEnable(GL_DEPTH_TEST);
+		int T_loc = glGetUniformLocation(shader_program, "uTranslucent");
+		if (T_loc != -1){
+			glUniform1i(T_loc, bTranslucent);
+		}		
+	}
 	char ch[15] = {0};
-	if (pData)
+	if (pData && bStepMode && pData->step_data.step_i>=0)
 		sprintf_s(ch, "Steps:%d", pData->step_data.step_i);
-	ImGui::LabelText("", ch);	
+	ImGui::Text(ch);
+	ImVec4 col = ImVec4(1.0, 0.0, 0.0, 1.0);
+	ImGui::TextColored(col,"Red points for positive");
+	col = ImVec4(0.0, 1.0, 0.0, 1.0);
+	ImGui::TextColored(col, "Green points for negative");
+	col = ImVec4(0.0, 0.0, 1.0, 1.0);
+	ImGui::TextColored(col, "Blue points for intersect");
 	ImGui::Render();
 	hasInit = true;	
 }
@@ -117,10 +186,17 @@ void Arcball() {
 
 	// Model
 	// call in main_object.draw() - main_object.M
-	int PVM_loc = glGetUniformLocation(shader_program, "PVM");
-	if (PVM_loc != -1){
-		glm::mat4 PVM = P*V*M;
-		glUniformMatrix4fv(PVM_loc, 1, false, glm::value_ptr(PVM));
+	int M_loc = glGetUniformLocation(shader_program, "M");
+	if (M_loc != -1){		
+		glUniformMatrix4fv(M_loc, 1, false, glm::value_ptr(M));
+	}
+	int V_loc = glGetUniformLocation(shader_program, "V");
+	if (V_loc != -1){		
+		glUniformMatrix4fv(V_loc, 1, false, glm::value_ptr(V));
+	}
+	int P_loc = glGetUniformLocation(shader_program, "P");
+	if (P_loc != -1){		
+		glUniformMatrix4fv(P_loc, 1, false, glm::value_ptr(P));
 	}
 }
 void DrawCube(){
@@ -130,14 +206,15 @@ void DrawCube(){
 	int color_loc = glGetUniformLocation(shader_program, "ucolor");
 	if (color_loc == -1) return;
 
+	SetStepData();
+
 	//cube	
-	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);
+	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
 	glm::vec4 color = glm::vec4(0.0f, 0.0f, 1.0f, 0.2f);
 	glUniform4fv(color_loc, 1, glm::value_ptr(color));
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
-	
 	
 	//edge
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
@@ -158,22 +235,26 @@ void DrawCube(){
 	glBindVertexArray(vao[2]);
 	color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
 	glUniform4fv(color_loc, 1, glm::value_ptr(color));
-	glDrawArrays(GL_POINTS, 0, vIntersectVertex.size() / 3);
+	glDrawArrays(GL_POINTS, 0, pData->step_data.intersect_coord.size()/3);
 		
 	glBindVertexArray(0);	
 }
 void DrawModel(){	
 	int color_loc = glGetUniformLocation(shader_program, "ucolor");
-	glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-	if (color_loc != -1)
-		glUniform4fv(color_loc, 1, glm::value_ptr(color));
+	glm::vec4 color;	
 
-	if (pData){
+	if (pData){	
 		glBindVertexArray(vao[0]);
-		glDrawElements(GL_LINES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		color = glm::vec4(0.1f, 0.1f, 0.1f, bTranslucent?0.5f:1.0f);		
+		glUniform4fv(color_loc, 1, glm::value_ptr(color));
+		glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
+		color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);		
+		glUniform4fv(color_loc, 1, glm::value_ptr(color));		
+		glDrawElements(GL_LINES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);		
+		glBindVertexArray(0);	
 	}	
 }
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -205,42 +286,18 @@ void passive(int x, int y)
 {
 	ImGui_ImplGlut_PassiveMouseMotionCallback(x, y);
 }
-
 void special(int key, int x, int y)
 {
 	ImGui_ImplGlut_SpecialCallback(key);
 	if (bStepMode == false) return;
 	switch (key)
 	{
-	case GLUT_KEY_RIGHT:	
+	case GLUT_KEY_RIGHT:
 		if (pDrawer) pDrawer->GetPolyData();
 		if (pData == nullptr) break;
-
-		//model
-		if (!pData->tri_list.empty() && !pData->vertex_list.empty()){
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-				vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);			
-		}	
-		
-		//cube
-		BufferData(0, 0, 0,vbo[1], pData->step_data.corner_coords.size()*sizeof(float), (void*)&pData->step_data.corner_coords[0]);
-		
-		//Intersect
-		vIntersectVertex.clear();
-		int num = pData->step_data.intersect_coord.size();
-		for (int i = 0; i < num / 3; i++){
-			if (pData->step_data.intersect_coord[i * 3] != pData->step_data.intersect_coord[i * 3])
-				continue;
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3]);
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3 + 1]);
-			vIntersectVertex.push_back(pData->step_data.intersect_coord[i * 3 + 2]);			
-		}
-		if (vIntersectVertex.size()>0){
-			BufferData(0, 0, 0, vbo[2], vIntersectVertex.size()*sizeof(float), (void*)&vIntersectVertex[0]);
-		}
-		
+		SetStepData();
 		break;
-	}	
+	}
 }
 
 void motion(int x, int y)
@@ -283,7 +340,7 @@ void reload_shader()
 		glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
 	}
 	else{
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		if (shader_program != -1)
 		{
 			glDeleteProgram(shader_program);
@@ -308,16 +365,21 @@ Drawer::Drawer(int* argc, char** argv){
 	
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitWindowPosition(30, 30);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
+	glutSetOption(GLUT_MULTISAMPLE, 4); //Set number of samples per pixel
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 	windowID = glutCreateWindow("Lalala");
 
 	glewInit();
 	ImGui_ImplGlut_Init();
 	reload_shader();	
 	glEnable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_MULTISAMPLE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glLineWidth(2.0);
-	glPointSize(8.0);
+
+	glPointSize(8.0);	
+//	glFrontFace()//设定正反面winding order
+//	glCullFace()//剔除面
 	/* Callback functions */
 	glutDisplayFunc(display);
 	glutKeyboardFunc(keyboard);
@@ -376,6 +438,12 @@ void Drawer::SetEquation(string s)
 {
 	if (m_pEvaluator)
 		m_pEvaluator->set_equation(s);	
+}
+
+void Drawer::ResetStep()
+{
+	if (m_pMmarching)
+		m_pMmarching->reset_step();
 }
 
 void Drawer::set_evaluator(Evaluator* e)
