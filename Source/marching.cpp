@@ -231,7 +231,7 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 		}
 
 	}
-	cout << "pi:" << pi << endl;
+	//cout << "pi:" << pi << endl;
 	step->intersect_coord.resize(pi*3);
 	
 }
