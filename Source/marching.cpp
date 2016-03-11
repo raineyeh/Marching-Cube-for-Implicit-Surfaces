@@ -98,6 +98,10 @@ bool Marching::recalculate(){
 			
 			x_0 = -1; y_0 = -1; z_0 = -1;
 
+			this->poly_data.tri_list.clear();
+			this->poly_data.vertex_list.clear();
+			this->poly_data.step_data.intersect_coord.clear();
+
 			//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
 			this->poly_data.step_data.step_i = 0;
 			for (float x0 = -1.0 ; x0 < 1.0; x0 += this->grid_step_size)
