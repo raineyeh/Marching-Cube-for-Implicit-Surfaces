@@ -14,6 +14,7 @@ public:
 	void SetEquation(string);
 	void ResetStep();
 	HANDLE m_hEvent;
+	
 private:
 	Marching* m_pMmarching;
 	Evaluator* m_pEvaluator;		
