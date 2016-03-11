@@ -13,6 +13,14 @@ bool Evaluator::set_equation(std::string s) {
 	equation = s;
 	token.clear();
 	tokenizer();
+	while (!operator_stack.empty())
+	{
+		operator_stack.pop();
+	}
+	while (!operand_stack.empty())
+	{
+		operand_stack.pop();
+	}
 	return true;
 }
 bool Evaluator::check_bug()
@@ -103,7 +111,7 @@ float Evaluator::evaluate(float x, float y, float z) {
 								operator_stack.push(ch); //cout << "operator_stack_push case " << ch << endl;
 								break;
 							}
-							if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
+							//if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
 							char temp = operator_stack.top(); operator_stack.pop();   //cout << "pop op stack" << temp << endl;
 							float val1 = operand_stack.top(); operand_stack.pop(); //cout << "pop oprand stack" << val1 << endl;
 							float val2 = operand_stack.top(); operand_stack.pop();  //cout << "pop opt stack" << val2 << endl;
@@ -116,7 +124,7 @@ float Evaluator::evaluate(float x, float y, float z) {
 		char temp; float val1, val2, result;
 		while (!operator_stack.empty()) {
 			temp = operator_stack.top();   	operator_stack.pop();   //cout << "pop op stack" << temp << endl;
-			if (operand_stack.size() < 2) { cout << "no operand available" << endl; break; return NAN; }
+			//if (operand_stack.size() < 2) { cout << "no operand available" << endl; break; return NAN; }
 			val1 = operand_stack.top();		operand_stack.pop();   //cout << "pop oprand stack" << val1 << endl;
 			val2 = operand_stack.top();		operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
 			result = evaluate_operation(temp, val2, val1);
@@ -133,6 +141,7 @@ int Evaluator::operator_precedence(char ch)
 	{
 	case '^': return 3; break;
 	case '/': return 2; break;
+	case '*': return 2; break;
 	case '+':return 1; break;
 	case '-': return 1; break;
 	case '(':return 0; break;
