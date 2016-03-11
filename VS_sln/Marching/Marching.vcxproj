@@ -17,9 +17,10 @@
     <ClCompile Include="..\..\Dependencies\imgui\imgui_impl_glut.cpp" />
     <ClCompile Include="..\..\Source\drawer.cpp" />
     <ClCompile Include="..\..\Source\evaluator.cpp" />
-    <ClCompile Include="..\..\Source\InitShader.cpp" />
+    <ClCompile Include="..\..\Source\glslprogram.cpp" />
     <ClCompile Include="..\..\Source\main.cpp" />
     <ClCompile Include="..\..\Source\marching.cpp" />
+    <ClCompile Include="..\..\Source\MyFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Dependencies\imgui\imconfig.h" />
@@ -31,9 +32,10 @@
     <ClInclude Include="..\..\Dependencies\imgui\stb_truetype.h" />
     <ClInclude Include="..\..\Source\drawer.h" />
     <ClInclude Include="..\..\Source\evaluator.h" />
-    <ClInclude Include="..\..\Source\InitShader.h" />
+    <ClInclude Include="..\..\Source\glslprogram.h" />
     <ClInclude Include="..\..\Source\marching.h" />
     <ClInclude Include="..\..\Source\marching_lookup.h" />
+    <ClInclude Include="..\..\Source\MyFile.h" />
     <ClInclude Include="..\..\Source\vao.h" />
   </ItemGroup>
   <ItemGroup>
