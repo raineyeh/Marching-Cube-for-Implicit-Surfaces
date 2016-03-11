@@ -76,7 +76,7 @@ void Movie(void*)
 	pDrawer->ResetStep();
 	pDrawer->SetStepMode(true);
 	bStepMode = true;
-//	pDrawer->SetEquation(string(buf));
+	pDrawer->SetEquation(string(buf));
 	pDrawer->SetGridSize(fGrid);
 	pDrawer->Recalculate();
 	pDrawer->GetPolyData();
@@ -128,7 +128,7 @@ void DrawGUI()
 			pDrawer->SetGridSize(fGrid);
 	}
 	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
-	//	pDrawer->SetEquation(string(buf));
+		pDrawer->SetEquation(string(buf));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();
 		pDrawer->GetPolyData();		
@@ -183,6 +183,8 @@ void DrawGUI()
 	ImGui::TextColored(col, "Green points for negative");
 	col = ImVec4(0.0, 0.0, 1.0, 1.0);
 	ImGui::TextColored(col, "Blue points for intersect");
+	col = ImVec4(1.0, 1.0, 1.0, 1.0);
+	ImGui::TextColored(col, "Right arrow for next step");
 	ImGui::Render();
 	bHasInit = true;	
 }
