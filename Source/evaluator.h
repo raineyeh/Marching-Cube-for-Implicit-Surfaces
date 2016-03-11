@@ -37,7 +37,7 @@ private:
 	int operator_precedence(char ch);
 	void tokenizer();
 	float evaluate_operation(char ch, float val1, float val2);
-	bool check_bug();//parser bug
+	bool check_bug();
 
 public:
 	Evaluator();
