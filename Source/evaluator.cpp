@@ -1,7 +1,7 @@
 #include "evaluator.h"
 
 Evaluator::Evaluator() {
-	set_equation("x^2+y^2-0.5");
+	set_equation("x+y");
 
 }
 
@@ -11,13 +11,38 @@ Evaluator::Evaluator(std::string s) {
 
 bool Evaluator::set_equation(std::string s) {
 	equation = s;
+	token.clear();
 	tokenizer();
 	return true;
 }
+bool Evaluator::check_bug()
+{
+	if (token.size() == 0) { cout << "empty string" << endl; return false; }
+	int open_brace = 0;
+	for (int i = 0; i < token.size(); i++)
+	{ 
+		if (is_open_brace(token[i].at(0)))
+		{
+			open_brace++;
+		}
+		else if (is_close_brace(token[i].at(0)))
+		{open_brace--;
+		}
+		if (open_brace == -1)
+		{
+			cout << "wrong braces" << endl; return false;
+		}
+	}//end for
 
+	if (open_brace == 0) return true;
+	else {
+		cout << "wrong braces" << endl; return false;
+	}
+}
 float Evaluator::evaluate(float x, float y, float z) {
 	{//start evaluate 
-
+		
+		if (!(check_bug())) return NAN;
 		for (int i = 0; i < token.size(); i++)
 		{//start of for
 			char ch = token[i].at(0);
@@ -33,7 +58,10 @@ float Evaluator::evaluate(float x, float y, float z) {
 					operand_stack.push(z);// cout << "stack so from var  "  << operand_stack.top() << endl;
 				}
 				else
+				{
 					cout << "not an accepted variable ";
+					return NAN;
+				}
 				if (is_number(ch) || token[i].size() >= 2)
 				{
 					std::string::size_type sz = token[i].size();
@@ -75,7 +103,7 @@ float Evaluator::evaluate(float x, float y, float z) {
 								operator_stack.push(ch); //cout << "operator_stack_push case " << ch << endl;
 								break;
 							}
-
+							if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
 							char temp = operator_stack.top(); operator_stack.pop();   //cout << "pop op stack" << temp << endl;
 							float val1 = operand_stack.top(); operand_stack.pop(); //cout << "pop oprand stack" << val1 << endl;
 							float val2 = operand_stack.top(); operand_stack.pop();  //cout << "pop opt stack" << val2 << endl;
@@ -88,6 +116,7 @@ float Evaluator::evaluate(float x, float y, float z) {
 		char temp; float val1, val2, result;
 		while (!operator_stack.empty()) {
 			temp = operator_stack.top();   	operator_stack.pop();   //cout << "pop op stack" << temp << endl;
+			if (operand_stack.size() < 2) { cout << "no operand available" << endl; break; return NAN; }
 			val1 = operand_stack.top();		operand_stack.pop();   //cout << "pop oprand stack" << val1 << endl;
 			val2 = operand_stack.top();		operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
 			result = evaluate_operation(temp, val2, val1);
