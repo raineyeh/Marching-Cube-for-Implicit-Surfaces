@@ -1,7 +1,7 @@
 #include "evaluator.h"
 
 Evaluator::Evaluator() {
-	set_equation("x+y");
+	set_equation("x+y+2");
 
 }
 
