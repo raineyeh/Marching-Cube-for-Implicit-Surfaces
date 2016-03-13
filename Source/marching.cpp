@@ -11,7 +11,8 @@ Marching::Marching(void){
 	this->poly_data.step_data.corner_values.resize(8);
 	this->poly_data.step_data.step_i = -2;
 	this->is_step_by_step = false;
-	
+	this->surface_constant = 0;
+	this->surface_step = 0;
 }
 
 bool Marching::set_evaluator(Evaluator* e){
@@ -23,10 +24,19 @@ bool Marching::set_evaluator(Evaluator* e){
 		return false;
 }
 
+void Marching::set_implicit_equal(float c){
+	this->surface_constant = c;
+}
+void Marching::set_implicit_repeat_step_length(float l){
+	this->surface_step = l;
+}
+
 float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
-		//return abs(x*x + y*y ) - radius ;
-		return this->evaluator->evaluate(x, y, z);
+		//return x*x + y*z ;
+		float v = this->evaluator->evaluate(x, y, z);
+		//cout << "v:" << v << endl;
+		return v;
 	}
 	else {
 		return 0;
@@ -75,7 +85,7 @@ bool Marching::recalculate(){
 					x_1 = x_0 + this->grid_step_size;
 
 					this->do_square(x_0, x_1, y_0, y_1, z_0, z_1);
-					add_step_to_poly_data();
+					this->add_step_to_poly_data();
 				}
 			}
 		}
@@ -143,13 +153,13 @@ bool Marching::recalculate(){
 	return true;
 }
 
-float interp(float x_s, float x_e, float v_s, float v_e){ //assumes interp zero
-	return x_s + (-v_s / (v_e - v_s)) * (x_e - x_s);
+float Marching::interp(float x_s, float x_e, float v_s, float v_e){ //interpolate to this->surface_constant
+	return x_s + ((this->surface_constant - v_s) / (v_e - v_s)) * (x_e - x_s);
 
 }
 
 void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,float z_1){
-	//cout << x_0 << " " << y_0 << " " << x_1 << " " << y_1 << endl;
+	//cout << x_0 << " " << y_0 << " " << z_0 << " " << x_1 << " " << y_1 << " "<<z_1<<endl;
 	Step_Data* step = &this->poly_data.step_data;
 	step->intersect_coord.clear();
 	step->tri_vlist.clear();
@@ -161,14 +171,14 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i+2]);
 
 	int cube_code = 0;
-	if (step->corner_values[0] > 0) cube_code |= 1;
-	if (step->corner_values[1] > 0) cube_code |= 2;
-	if (step->corner_values[2] > 0) cube_code |= 4;
-	if (step->corner_values[3] > 0) cube_code |= 8;
-	if (step->corner_values[4] > 0) cube_code |= 16;
-	if (step->corner_values[5] > 0) cube_code |= 32;
-	if (step->corner_values[6] > 0) cube_code |= 64;
-	if (step->corner_values[7] > 0) cube_code |= 128;
+	if (step->corner_values[0] > this->surface_constant) cube_code |= 1;
+	if (step->corner_values[1] > this->surface_constant) cube_code |= 2;
+	if (step->corner_values[2] > this->surface_constant) cube_code |= 4;
+	if (step->corner_values[3] > this->surface_constant) cube_code |= 8;
+	if (step->corner_values[4] > this->surface_constant) cube_code |= 16;
+	if (step->corner_values[5] > this->surface_constant) cube_code |= 32;
+	if (step->corner_values[6] > this->surface_constant) cube_code |= 64;
+	if (step->corner_values[7] > this->surface_constant) cube_code |= 128;
 
 	if (cube_code == 0 || cube_code == 255) return;
 
@@ -287,26 +297,6 @@ int Marching::add_triangle(int p1, int p2, int p3){
 	return new_tri_i;
 }
 
-int Marching::add_line(float x0, float y0, float x1, float y1){
-	
-	int new_vertex_i1 = add_point(x0, y0, 0);
-	int new_vertex_i2 = add_point(x1, y1, 0);
-	return add_line(new_vertex_i1, new_vertex_i2);
-
-	
-
-}
-int Marching::add_line(int pi1, int pi2){
-
-	int new_line_i = this->poly_data.tri_list.size();
-	
-	this->poly_data.tri_list.push_back(pi1);
-	this->poly_data.tri_list.push_back(pi2);
-	//this->poly_data.tri_list.push_back(pi2);
-
-	return new_line_i;
-
-}
 
 
 Poly_Data const * Marching::get_poly_data(){

@@ -31,23 +31,25 @@ public:
 	void reset_step();
 	Poly_Data const * get_poly_data();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
-	
+	void set_implicit_equal(float); //Defines at what value the surface is drawn. Default to 0
+	void set_implicit_repeat_step_length(float); //set to zero or negative to turn it off
 
 private:
 	
 	float evaluate(float x, float y, float z);
 	void do_square(float, float, float, float, float, float);
-	int add_line(float, float, float, float);
-	int add_line(int, int);
 	int add_triangle(int, int, int);
 	int add_point(float, float, float);
 	void add_step_to_poly_data();
+	float interp(float, float, float, float);
 
 
 	Evaluator* evaluator;
 	float grid_step_size;
 	Poly_Data poly_data;
 	bool is_step_by_step;
+	float surface_constant;
+	float surface_step;
 
 };
 
