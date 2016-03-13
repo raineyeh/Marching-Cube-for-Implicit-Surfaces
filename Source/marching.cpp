@@ -27,7 +27,7 @@ bool Marching::set_evaluator(Evaluator* e){
 void Marching::set_implicit_equal(float c){
 	this->surface_constant = c;
 }
-void Marching::set_implicit_repeat_step_length(float l){
+void Marching::set_implicit_repeat_step_distance(float l){
 	this->surface_step = l;
 }
 
@@ -167,9 +167,24 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 	step->corner_coords = { x_0, y_0, z_0, x_1, y_0, z_0, x_1, y_1, z_0, x_0, y_1, z_0, 
 		x_0, y_0, z_1, x_1, y_0, z_1, x_1, y_1, z_1, x_0, y_1, z_1 };
 	
+	//calculate the corner values
 	for (int i = 0; i < 8; i++)
 		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i+2]);
 
+	//in the case that this->surface_step is set a positive value, change this->surface constant temporarily to calculate correctly.
+	float orig_surface_constant = this->surface_constant;
+	if (this->surface_step>0){
+		float corner_val_min = step->corner_values[0]; float corner_val_max = step->corner_values[0];
+		for (int i = 1; i < 8; i++){
+			if (corner_val_min > step->corner_values[i]) corner_val_min = step->corner_values[i];
+			if (corner_val_max < step->corner_values[i]) corner_val_max = step->corner_values[i];
+		}
+		float a = (corner_val_max - this->surface_constant) / this->surface_step;
+		a = floor(a);
+		this->surface_constant += this->surface_step * a;
+		step->surf_constant = this->surface_constant;
+	}
+	
 	int cube_code = 0;
 	if (step->corner_values[0] > this->surface_constant) cube_code |= 1;
 	if (step->corner_values[1] > this->surface_constant) cube_code |= 2;
@@ -216,6 +231,7 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 			step->intersect_coord[ei * 3 + 1] = y_interp;
 			step->intersect_coord[ei * 3 + 2] = z_interp;
 		}
+		
 	}
 
 	//go through tri_table, add triangle vertices
@@ -247,6 +263,9 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 	}
 	//cout << "pi:" << pi << endl;
 	step->intersect_coord.resize(pi*3);
+
+	//reset the surface constant
+	this->surface_constant = orig_surface_constant;
 	
 }
 

@@ -11,6 +11,7 @@ struct Step_Data{
 	std::vector<float> corner_values; //values of the 8 corners. size=8
 	std::vector<float> intersect_coord; //intersection coordinate for each edge. size = 3* number of intersect points
 	std::vector<int> tri_vlist; //vertex list of the triangles. size = 3*num_triangles. max_num_tri = 5
+	float surf_constant; //value of the surface. marching cube corner is considered positive if corner_values[i] > surf_constant
 };
 
 struct Poly_Data{
@@ -32,7 +33,7 @@ public:
 	Poly_Data const * get_poly_data();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
 	void set_implicit_equal(float); //Defines at what value the surface is drawn. Default to 0
-	void set_implicit_repeat_step_length(float); //set to zero or negative to turn it off
+	void set_implicit_repeat_step_distance(float); //set to zero or negative to turn it off
 
 private:
 	
@@ -42,7 +43,6 @@ private:
 	int add_point(float, float, float);
 	void add_step_to_poly_data();
 	float interp(float, float, float, float);
-
 
 	Evaluator* evaluator;
 	float grid_step_size;
