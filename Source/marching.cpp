@@ -11,6 +11,7 @@ Marching::Marching(void){
 	this->poly_data.step_data.corner_values.resize(8);
 	this->poly_data.step_data.step_i = -2;
 	this->is_step_by_step = false;
+	this->is_repeating_surface = false;
 	this->surface_constant = 0;
 	this->surface_step = 0;
 }
@@ -24,11 +25,22 @@ bool Marching::set_evaluator(Evaluator* e){
 		return false;
 }
 
-void Marching::set_implicit_equal(float c){
+void Marching::set_surface_constant(float c){
+
 	this->surface_constant = c;
 }
-void Marching::set_implicit_repeat_step_distance(float l){
+bool Marching::set_surface_repeat_step_distance(float l){
+	if (l <= 0)
+		return false;
 	this->surface_step = l;
+	return true;
+}
+bool Marching::repeating_surface_mode(bool b){
+	if (this->surface_step < 0){
+		return this->is_repeating_surface = false;
+	}
+	this->is_repeating_surface = b;
+	return true;
 }
 
 float Marching::evaluate(float x, float y, float z){
@@ -173,7 +185,7 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 
 	//in the case that this->surface_step is set a positive value, change this->surface constant temporarily to calculate correctly.
 	float orig_surface_constant = this->surface_constant;
-	if (this->surface_step>0){
+	if (this->is_repeating_surface){
 		float corner_val_min = step->corner_values[0]; float corner_val_max = step->corner_values[0];
 		for (int i = 1; i < 8; i++){
 			if (corner_val_min > step->corner_values[i]) corner_val_min = step->corner_values[i];
@@ -195,7 +207,10 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 	if (step->corner_values[6] > this->surface_constant) cube_code |= 64;
 	if (step->corner_values[7] > this->surface_constant) cube_code |= 128;
 
-	if (cube_code == 0 || cube_code == 255) return;
+	if (cube_code == 0 || cube_code == 255) {
+		this->surface_constant = orig_surface_constant;
+		return;
+	}
 
 	int* tri_edge_list = tri_table[cube_code];
 	/*

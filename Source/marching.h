@@ -32,8 +32,9 @@ public:
 	void reset_step();
 	Poly_Data const * get_poly_data();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
-	void set_implicit_equal(float); //Defines at what value the surface is drawn. Default to 0
-	void set_implicit_repeat_step_distance(float); //set to zero or negative to turn it off
+	void set_surface_constant(float); //Defines at what value the surface is drawn. Default to 0
+	bool set_surface_repeat_step_distance(float); //must be positive, and best not too low, depending on grid size.
+	bool repeating_surface_mode(bool);
 
 private:
 	
@@ -50,6 +51,7 @@ private:
 	bool is_step_by_step;
 	float surface_constant;
 	float surface_step;
+	bool is_repeating_surface;
 
 };
 
