@@ -1,7 +1,7 @@
 #include "evaluator.h"
 
 Evaluator::Evaluator() {
-	set_equation("x+y+2");
+	set_equation("x+y");
 
 }
 
@@ -165,25 +165,38 @@ void Evaluator::tokenizer()
 	//the equation for the checking of marching cubes 
 	// the result of the tokenization based on finding the operation 
 	int curr1 = 0;       //index to keep track of last split 
-	//cout << equation << endl;
-	int i = 1;
-	for (i = 1; i<equation.size(); i++)        //we trace the equation character by character 
+	cout << equation << endl;
+	int i;
+	if (equation[0] == '-')  i = 1; else i = 0;
+	for (; i<equation.size(); i++)        //we trace the equation character by character 
 	{//start for
-	 //cout << i <<" "<<equation[i]<< "   this is boolean " << isoperator(equation[i]) << endl;
-		if (isoperator(equation[i]) && (!is_neg(equation[i], equation[i - 1])))      //if the char is an operator but not a negative sign (this is to differntiate minus from negative )
+	 cout << i <<" "<<equation[i]<< "   this is boolean " << isoperator(equation[i]) << endl;
+	 if ( i==0 && isoperator(equation[0]) && (equation[0] != '-'))
+	 {
+		 token.push_back(equation.substr(0, 1));
+		 curr1 = 1;
+	 }
+	 if (i>0 && isoperator(equation[i]) && (!is_neg(equation[i], equation[i - 1])))      //if the char is an operator but not a negative sign (this is to differntiate minus from negative )
 		{
-			//cout << i << " " << isoperator(equation[i]) << endl;
+			cout << i << " " << isoperator(equation[i]) << endl;
 
 			if (equation.substr(curr1, i - curr1) != "")
-				token.push_back(equation.substr(curr1, i - curr1));
+			{
+				token.push_back(equation.substr(curr1, i - curr1)); 
+			}
 			if (equation.substr(i, 1) != "")
-				token.push_back(equation.substr(i, 1));
-			curr1 = i + 1;
+			{
+				token.push_back(equation.substr(i, 1)); 
+			}
+						curr1 = i + 1;
 		}//end if 
+	 
+		 
 	}//end for
 	if (i > curr1)
-		token.push_back(equation.substr(curr1));                   //insertion to the															   //cout << "size of the vector" << token.size() << endl;
-																   //for (int i = 0; i < token.size(); i++)
-																   //	cout << token[i] << endl;
+		token.push_back(equation.substr(curr1));                   //insertion to the	
+																   cout << "size of the vector token " << token.size() << endl;
+																   for (int i = 0; i < token.size(); i++)
+																   	cout << token[i] << endl;
 }//end of tokenizer
 
