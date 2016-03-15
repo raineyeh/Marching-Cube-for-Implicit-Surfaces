@@ -1,4 +1,6 @@
 #include "evaluator.h"
+#include <iostream>
+using namespace std;
 
 Evaluator::Evaluator() {
 	set_equation("x+y");
@@ -25,7 +27,7 @@ bool Evaluator::set_equation(std::string s) {
 }
 bool Evaluator::check_bug()
 {
-	if (token.size() == 0) { cout << "empty string" << endl; return false; }
+	if (token.size() == 0) { std::cout<< "empty string" << endl; return false; }
 	int open_brace = 0;
 	for (int i = 0; i < token.size(); i++)
 	{ 
@@ -38,13 +40,13 @@ bool Evaluator::check_bug()
 		}
 		if (open_brace == -1)
 		{
-			cout << "wrong braces" << endl; return false;
+			std::cout << "wrong braces" << endl; return false;
 		}
 	}//end for
 
 	if (open_brace == 0) return true;
 	else {
-		cout << "wrong braces" << endl; return false;
+		std::cout << "wrong braces" << endl; return false;
 	}
 }
 float Evaluator::evaluate(float x, float y, float z) {
@@ -56,28 +58,44 @@ float Evaluator::evaluate(float x, float y, float z) {
 			char ch = token[i].at(0);
 			//cout << ch<< is_number(ch)<<endl;
 			if (is_variable(ch))
+			{
 				if (ch == 'x' || ch == 'X') {
-					operand_stack.push(x);  //cout << "stack so from var  "<<operand_stack.top() << endl;
+					operand_stack.push(x);  std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
 				else if (ch == 'y' || ch == 'Y') {
-					operand_stack.push(y);// cout << "stack so from var "   <<operand_stack.top() << endl;
+					operand_stack.push(y); std::cout << "stack so from var " << operand_stack.top() << endl;
 				}
 				else if (ch == 'z' || ch == 'Z') {
-					operand_stack.push(z);// cout << "stack so from var  "  << operand_stack.top() << endl;
+					operand_stack.push(z); std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
 				else
 				{
-					cout << "not an accepted variable ";
+					std::cout << "not an accepted variable ";
 					return NAN;
 				}
-				if (is_number(ch) || token[i].size() >= 2)
+			}
+			if ((token[i].size() == 2) && (token[i].at(0) == '-') && is_variable(token[i].at(1)))
 				{
-					std::string::size_type sz = token[i].size();
-					float  d = stof(token[i], &sz);
-					//cout << "d="<< d << endl;
-					operand_stack.push(d);
-					//cout << "stack ss from number  = " << operand_stack.top() << endl;
+					if (token[i].at(1) == 'x' || token[i].at(1) == 'X') {
+					operand_stack.push(-1 * x);  std::cout << "stack so from var  " << operand_stack.top() << endl;
+					}
+					else if (token[i].at(1) == 'y' || token[i].at(1) == 'Y') {
+					operand_stack.push(-1 * y); std::cout << "stack so from var " << operand_stack.top() << endl;
+					}
+					else if (token[i].at(1) == 'z' || token[i].at(1) == 'Z') {
+					operand_stack.push(-1 * z); std::cout << "stack so from var  " << operand_stack.top() << endl;
+					}
 				}
+					
+			if ( (token[i].size()==1) && (is_number(token[i].at(0)))|| ((token[i].size()>1) && is_number(token[i].at(1))))
+					{
+						std::string::size_type sz = token[i].size();
+						float  d = stof(token[i], &sz);
+						//cout << "d="<< d << endl;
+						operand_stack.push(d);
+						std::cout << "stack ss from number  = " << operand_stack.top() << endl;
+					}
+				
 				if (isoperator(ch) && token[i].size() == 1)
 				{//start evaluating when operators arrive 
 				 //cout << ch <<" "<< isoperator(ch) <<" "<< endl;
