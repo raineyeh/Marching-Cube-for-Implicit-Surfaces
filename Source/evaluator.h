@@ -27,7 +27,10 @@ private:
 	inline bool is_close_brace(char ch) { return (ch == ')'); }
 	inline bool is_neg(char ch1, char ch2)
 	{
-		return ((ch1 == '-') && (isoperator(ch2) || is_open_brace(ch2)));
+		return (
+			(ch1 == '-') && (isoperator(ch2) || is_open_brace(ch2)) ||
+			((ch1 == '-') && (ch2==NULL) )
+			);
 	}
 	bool is_number(char ch)
 	{
