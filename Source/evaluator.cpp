@@ -2,9 +2,10 @@
 #include <iostream>
 using namespace std;
 
-Evaluator::Evaluator() {
-	set_equation("x+y");
-
+Evaluator::Evaluator()
+{
+	equation = "";
+	token.clear();
 }
 
 Evaluator::Evaluator(std::string s) {
@@ -60,13 +61,13 @@ float Evaluator::evaluate(float x, float y, float z) {
 			if (is_variable(ch))
 			{
 				if (ch == 'x' || ch == 'X') {
-					operand_stack.push(x);  std::cout << "stack so from var  " << operand_stack.top() << endl;
+					operand_stack.push(x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
 				else if (ch == 'y' || ch == 'Y') {
-					operand_stack.push(y); std::cout << "stack so from var " << operand_stack.top() << endl;
+					operand_stack.push(y); //std::cout << "stack so from var " << operand_stack.top() << endl;
 				}
 				else if (ch == 'z' || ch == 'Z') {
-					operand_stack.push(z); std::cout << "stack so from var  " << operand_stack.top() << endl;
+					operand_stack.push(z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
 				else
 				{
@@ -77,23 +78,23 @@ float Evaluator::evaluate(float x, float y, float z) {
 			if ((token[i].size() == 2) && (token[i].at(0) == '-') && is_variable(token[i].at(1)))
 				{
 					if (token[i].at(1) == 'x' || token[i].at(1) == 'X') {
-					operand_stack.push(-1 * x);  std::cout << "stack so from var  " << operand_stack.top() << endl;
+					operand_stack.push(-1 * x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
 					}
 					else if (token[i].at(1) == 'y' || token[i].at(1) == 'Y') {
-					operand_stack.push(-1 * y); std::cout << "stack so from var " << operand_stack.top() << endl;
+					operand_stack.push(-1 * y); //std::cout << "stack so from var " << operand_stack.top() << endl;
 					}
 					else if (token[i].at(1) == 'z' || token[i].at(1) == 'Z') {
-					operand_stack.push(-1 * z); std::cout << "stack so from var  " << operand_stack.top() << endl;
+					operand_stack.push(-1 * z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
 					}
 				}
 					
-			if ( (token[i].size()==1) && (is_number(token[i].at(0)))|| ((token[i].size()>1) && is_number(token[i].at(1))))
+			if (     (token[i].size()>=1)   &&    (is_number(token[i].at(0))|| is_number(token[i].at(0))))
 					{
 						std::string::size_type sz = token[i].size();
 						float  d = stof(token[i], &sz);
 						//cout << "d="<< d << endl;
 						operand_stack.push(d);
-						std::cout << "stack ss from number  = " << operand_stack.top() << endl;
+						//std::cout << "stack ss from number stof   = " << operand_stack.top() << endl;
 					}
 				
 				if (isoperator(ch) && token[i].size() == 1)
@@ -134,7 +135,7 @@ float Evaluator::evaluate(float x, float y, float z) {
 							float val1 = operand_stack.top(); operand_stack.pop(); //cout << "pop oprand stack" << val1 << endl;
 							float val2 = operand_stack.top(); operand_stack.pop();  //cout << "pop opt stack" << val2 << endl;
 							float result = evaluate_operation(temp, val2, val1);
-							operand_stack.push(result);   //cout << "push result stack" << result << endl;
+							operand_stack.push(result);  // cout << "push result stack" << result << endl;
 						}//end of while
 					}// 
 				}//
@@ -188,7 +189,7 @@ void Evaluator::tokenizer()
 	if (equation[0] == '-')  i = 1; else i = 0;
 	for (; i<equation.size(); i++)        //we trace the equation character by character 
 	{//start for
-	 cout << i <<" "<<equation[i]<< "   this is boolean " << isoperator(equation[i]) << endl;
+	 //cout << i <<" "<<equation[i]<< "   this is boolean " << isoperator(equation[i]) << endl;
 	 if ( i==0 && isoperator(equation[0]) && (equation[0] != '-'))
 	 {
 		 token.push_back(equation.substr(0, 1));
@@ -208,13 +209,11 @@ void Evaluator::tokenizer()
 			}
 						curr1 = i + 1;
 		}//end if 
-	 
-		 
-	}//end for
+	 }//end for
 	if (i > curr1)
 		token.push_back(equation.substr(curr1));                   //insertion to the	
-																   cout << "size of the vector token " << token.size() << endl;
+																  /* cout << "size of the vector token " << token.size() << endl;
 																   for (int i = 0; i < token.size(); i++)
-																   	cout << token[i] << endl;
+																   	cout << token[i] << endl;*/
 }//end of tokenizer
 
