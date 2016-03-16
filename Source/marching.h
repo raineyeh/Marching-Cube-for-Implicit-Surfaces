@@ -45,6 +45,8 @@ private:
 	void add_step_to_poly_data();
 	float interp(float, float, float, float);
 
+	void print_step_info();
+
 	Evaluator* evaluator;
 	float grid_step_size;
 	Poly_Data poly_data;

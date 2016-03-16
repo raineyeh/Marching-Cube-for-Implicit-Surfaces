@@ -3,7 +3,18 @@
 #include <iostream>
 #include <math.h>
 
-float radius = .5;
+void Marching::print_step_info(){
+	Step_Data*sd = &this->poly_data.step_data;
+	cout << "x_0:" << sd->corner_coords[0] << " y_0:" << sd->corner_coords[1] << " z_0:" << sd->corner_coords[2] << endl;
+	int c_code = 0;
+	for (int i = 0; i < 8; i++){
+		bool b = (sd->corner_values[i] > sd->surf_constant);
+		cout << "corner " << i << "(" << (b?1:0) << "):" << sd->corner_values[i] << endl;
+		c_code += b ? two_to_the[i]: 0;
+	}
+	cout << "cube_code:" << c_code << endl;
+}
+
 Marching::Marching(void){
 	this->grid_step_size = (float)0.25;
 	this->evaluator = NULL;
@@ -47,7 +58,9 @@ float Marching::evaluate(float x, float y, float z){
 	if (this->evaluator) {
 		//return x*x + y*z ;
 		float v = this->evaluator->evaluate(x, y, z);
-		//cout << "v:" << v << endl;
+		/*if (v==NAN || isinf(v))
+			cout << "v:" << v << " isnan"<<(v==NAN)<<"  isinf"<<isinf(v)<< endl;
+			*/
 		return v;
 	}
 	else {
@@ -81,7 +94,6 @@ void Marching::reset_step(){
 
 bool Marching::recalculate(){
 	if (!this->is_step_by_step){
-		radius -= .01;
 
 		this->poly_data.step_data.step_i = -2;
 
@@ -166,7 +178,12 @@ bool Marching::recalculate(){
 }
 
 float Marching::interp(float x_s, float x_e, float v_s, float v_e){ //interpolate to this->surface_constant
-	return x_s + ((this->surface_constant - v_s) / (v_e - v_s)) * (x_e - x_s);
+	float v = ((this->surface_constant - v_s) / (v_e - v_s)) * (x_e - x_s);
+	if (isinf(v))
+		return  x_s + 0.5*(x_e - x_s);
+	if (isnan(v))
+		return x_s + 0.5*(x_e - x_s);
+	return x_s + v;
 
 }
 
@@ -212,21 +229,43 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 		return;
 	}
 
+	/*if (this->is_step_by_step)
+		print_step_info();
+		*/
+
 	int* tri_edge_list = tri_table[cube_code];
-	/*
+	
 	//For ambiguous cases, check and replace with alternative index if needed
-	int alternative_idx = ambiguous_line_table_redirect[cube_code];
-	if (alternative_idx != -1){ //ambiguous case
+
+	int alternative_idx = ambiguity_check_and_redirect[cube_code][0];
+	int flipped_tri_table[16]; //a temporary storage for tri_table entry 
+	//with the triangles flipped to account for ambiguity cases
+	if (alternative_idx >= 0){ //ambiguous case
+		//cout << "ambiguous case!"<< endl;
+		
+		int* edge_to_check_list = ambiguity_check_and_redirect[cube_code]+1;
+		
 		float midx = 0, midy = 0, midz = 0;
 		for (int i = 0; i < 4; i++){
-			midx += step->corner_coords[i * 3];
-			midy += step->corner_coords[i* 3+1];
+			int vi = edge_to_check_list[i];
+			midx += step->corner_coords[vi * 3];
+			midy += step->corner_coords[vi * 3 + 1];
+			midz += step->corner_coords[vi * 3 + 2];
 		}
-		midx /= 4.0; midy /= 4.0;
-		float mid_val = this->evaluate(midx, midy, 0);
-		if (mid_val < 0)
-			lines_edge = line_table[alternative_idx];
-	}*/
+		midx /= 4.0; midy /= 4.0; midz /= 4.0;
+		float mid_val = this->evaluate(midx, midy, midz);
+		if (mid_val > this->surface_constant){
+			tri_edge_list = tri_table[alternative_idx];
+			for (int i = 0; i < 5; i++){
+				flipped_tri_table[i * 3] = tri_edge_list[i * 3];
+				flipped_tri_table[i * 3+1] = tri_edge_list[i * 3+2];
+				flipped_tri_table[i * 3+2] = tri_edge_list[i * 3+1];
+			}
+			flipped_tri_table[15] = -1; //last entry
+			tri_edge_list = flipped_tri_table;
+		}
+		
+	}
 
 	// calculate intersection coordinates
 	
@@ -234,8 +273,8 @@ void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,f
 	for (int ei = 0; ei < 12; ei++){
 		int v1 = cube_edge_vertex_table[ei][0];
 		int v2 = cube_edge_vertex_table[ei][1];
-		bool v1_val = cube_code & two_to_the[v1];
-		bool v2_val = cube_code & two_to_the[v2];
+		bool v1_val = (cube_code & two_to_the[v1]) != 0;
+		bool v2_val = (cube_code & two_to_the[v2]) != 0;
 		
 		if (v1_val != v2_val){ //this edge has an intersecting point
 			float x_interp = interp(step->corner_coords[v1 * 3], step->corner_coords[v2 * 3], step->corner_values[v1], step->corner_values[v2]);
@@ -330,7 +369,6 @@ int Marching::add_triangle(int p1, int p2, int p3){
 
 	return new_tri_i;
 }
-
 
 
 Poly_Data const * Marching::get_poly_data(){
