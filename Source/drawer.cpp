@@ -1,8 +1,8 @@
 #define GLM_FORCE_RADIANS
 #include "drawer.h"
-#include "imgui_impl_glut.h"
+#include "imgui/imgui_impl_glut.h" 
 #include <algorithm>
-#include <memory>
+#include <memory> 
 #include <process.h> 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -38,7 +38,7 @@ int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
-/* objects */
+// objects 
 MyFile myfile;
 Drawer* pDrawer = nullptr;
 GLSLProgram program;
@@ -55,6 +55,8 @@ void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 void SetStepData(){
+	if (pData == nullptr) return;
+
 	//model
 	if (!pData->tri_list.empty() && !pData->vertex_list.empty()){
 		BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
@@ -375,7 +377,7 @@ Drawer::Drawer(int* argc, char** argv){
 	glutInitWindowPosition(30, 30);
 	glutSetOption(GLUT_MULTISAMPLE, 4); //Set number of samples per pixel
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
-	windowID = glutCreateWindow("Lalala");
+	windowID = glutCreateWindow("Marching Cube");
 
 	glewInit();
 	ImGui_ImplGlut_Init();
@@ -403,7 +405,7 @@ Drawer::Drawer(int* argc, char** argv){
 	InitBuffer();
 	m_pEvaluator = nullptr;
 	m_pMmarching = nullptr;		
-	m_hEvent = CreateEvent(NULL, FALSE, FALSE, "Event");
+	m_hEvent = CreateEvent(NULL, FALSE, FALSE, "Event");	
 }
 
 bool Drawer::set_march(Marching* m){
