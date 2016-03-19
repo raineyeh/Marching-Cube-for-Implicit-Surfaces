@@ -13,6 +13,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "glslprogram.h"
+#include "tinycthread.h"
 #include "vao.h"
 #include "MyFile.h"
 using namespace std;
@@ -33,7 +34,7 @@ static bool bStepMode = false;
 static bool bTranslucent = false;
 bool bHasInit = false;
 bool bPressed = false;
-bool bMovie = false;
+bool bMovie, bPause;
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
@@ -42,6 +43,7 @@ vector<float> vIntersectVertex, vIntersectIndex;
 MyFile myfile;
 Drawer* pDrawer = nullptr;
 GLSLProgram program;
+thrd_t movie_thread;
 //cube idx
 unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 4, 7, 4, 3, 0, 4, 5, 6, 6, 7, 4 };
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
@@ -72,17 +74,13 @@ void SetStepData(){
 		BufferData(0, 0, 0, vbo[2], pData->step_data.intersect_coord.size()*sizeof(float), (void*)&pData->step_data.intersect_coord[0]);
 	}
 }
-void Movie(void*)
+
+static int Movie(void*)
 {		
-	if (pDrawer == nullptr) return;	
-	pDrawer->ResetStep();
-	pDrawer->SetStepMode(true);
-	bStepMode = true;
-	pDrawer->SetEquation(string(buf));
-	pDrawer->SetGridSize(fGrid);
-	pDrawer->Recalculate();
-	pDrawer->GetPolyData();
+	if (pDrawer == nullptr) return true;	
+	
 	for (int i = 0; bMovie && pData && i != pData->step_data.step_i;){
+		if (bPause) continue;
 		pDrawer->Recalculate();
 		SetStepData();	
 		Sleep(50);		
@@ -93,24 +91,8 @@ void Movie(void*)
 	bMovie = false;	
 	SetEvent(pDrawer->m_hEvent);
 	_endthread();	
+	return true;
 }
-void WaitForEnd(){	
-	MSG msg = { 0 };
-	while (pDrawer){
-		DWORD result = MsgWaitForMultipleObjects(1, &pDrawer->m_hEvent, FALSE, INFINITE, QS_ALLINPUT);
-		if (result == (WAIT_OBJECT_0)){
-			for (int i = 0; i < 3; i++){
-				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
-				return;
-			}
-		}
-		else{
-			PeekMessage(&msg, NULL, 0, 0, PM_REMOVE);
-			DispatchMessage(&msg);
-		}
-	}
-}
-
 void DrawGUI()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
@@ -139,16 +121,40 @@ void DrawGUI()
 					   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(bMovie?"Stop":"Movie")){
+	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
-			bMovie = false;		
-			WaitForEnd();			
+			bMovie = false;
+			bPause = false;
+			thrd_join(movie_thread, NULL);
+			movie_thread = 0;
+			for (int i = 0; i < 3; i++){
+				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);				
+			}				
 		}
-		else{
-			_beginthread(Movie, 0, 0);
+		else{	
+			bStepMode = true;
 			bMovie = true;
+			bPause = false;
+			if (pDrawer == nullptr) return;
+			pDrawer->ResetStep();
+			pDrawer->SetStepMode(true);			
+			pDrawer->SetEquation(string(buf));
+			pDrawer->SetGridSize(fGrid);
+			pDrawer->Recalculate();
+			pDrawer->GetPolyData();
+			thrd_create(&movie_thread, Movie, NULL);				
 		}		
 	}
+	if (bMovie){
+		ImGui::SameLine();
+		if (ImGui::Button(bPause?"Resume":"Pause")){
+			if (bPause)
+				bPause = false;
+			else
+				bPause = true;			
+		}
+	}
+	
 	ImGui::SameLine();
 	if (!bMovie && ImGui::Button("Reset") ){
 		if (pDrawer)
@@ -157,17 +163,17 @@ void DrawGUI()
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 		}		
 	}	
-	if (!bMovie && ImGui::Button("Save mesh")){
+	if (ImGui::Button("Save mesh")){
 		myfile.Save(pData);
 	}
 	ImGui::SameLine();
-	if (!bMovie && ImGui::Button("Load mesh")){
+	if (ImGui::Button("Load mesh")){
 		myfile.Open();
 	}
 	if (!bMovie && ImGui::Checkbox("Step Mode", &bStepMode)){
 		if (pDrawer)
 			pDrawer->SetStepMode(bStepMode);
-	}ImGui::SameLine();
+	}
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent)
 			glDisable(GL_DEPTH_TEST); 
@@ -306,6 +312,7 @@ void special(int key, int x, int y){
 	{
 	case GLUT_KEY_RIGHT:
 		if (pDrawer) {
+			pDrawer->SetEquation(string(buf));
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
 		}			
