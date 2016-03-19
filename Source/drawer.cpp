@@ -27,14 +27,11 @@ int windowID = -1;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char buf[256] = "x^2+y^2-0.5";
+static char buf[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";// x^2+y^2-0.5
 static float fGrid = 0.25f;
 static float fInterval = 0.2f;
-static bool bStepMode = false;
-static bool bTranslucent = false;
-bool bHasInit = false;
-bool bPressed = false;
-bool bMovie, bPause;
+static bool bStepMode, bTranslucent, bInvertFace;
+bool bPressed,bHasInit, bMovie, bPause;
 int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
@@ -77,8 +74,7 @@ void SetStepData(){
 
 static int Movie(void*)
 {		
-	if (pDrawer == nullptr) return true;	
-	
+	if (pDrawer == nullptr) return true;		
 	for (int i = 0; bMovie && pData && i != pData->step_data.step_i;){
 		if (bPause) continue;
 		pDrawer->Recalculate();
@@ -88,8 +84,7 @@ static int Movie(void*)
 	pDrawer->SetStepMode(false);
 	pDrawer->ResetStep();
 	bStepMode = false;
-	bMovie = false;	
-	SetEvent(pDrawer->m_hEvent);
+	bMovie = false;		
 	_endthread();	
 	return true;
 }
@@ -127,9 +122,8 @@ void DrawGUI()
 			bPause = false;
 			thrd_join(movie_thread, NULL);
 			movie_thread = 0;
-			for (int i = 0; i < 3; i++){
-				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);				
-			}				
+			for (int i = 0; i < 3; i++)
+				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);									
 		}
 		else{	
 			bStepMode = true;
@@ -153,15 +147,13 @@ void DrawGUI()
 			else
 				bPause = true;			
 		}
-	}
-	
+	}	
 	ImGui::SameLine();
 	if (!bMovie && ImGui::Button("Reset") ){
 		if (pDrawer)
 			pDrawer->ResetStep();
-		for (int i = 0; i < 3;i++){
-			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
-		}		
+		for (int i = 0; i < 3;i++)
+			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 	}	
 	if (ImGui::Button("Save mesh")){
 		myfile.Save(pData);
@@ -180,6 +172,12 @@ void DrawGUI()
 		else
 			glEnable(GL_DEPTH_TEST);	
 		program.setUniform("uTranslucent", bTranslucent);
+	}
+	if (ImGui::Checkbox("Invert Face", &bInvertFace)){		
+		if (bInvertFace)
+			glFrontFace(GL_CW);
+		else
+			glFrontFace(GL_CCW);		
 	}
 	char ch[15] = {0};
 	if (pData && bStepMode && pData->step_data.step_i>=0)
@@ -269,15 +267,18 @@ void DrawCube(){
 }
 void DrawModel(){		
 	if (pData == nullptr) return;
-
+	
 	glBindVertexArray(vao[0]);
 	glm::vec4 color = glm::vec4(0.3f, 0.1f, 0.1f, bTranslucent ? 0.5f : 1.0f);
 	program.setUniform("ucolor", color);
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
 	program.setUniform("ucolor", color);
-	glDrawElements(GL_LINES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void display()
@@ -394,8 +395,7 @@ Drawer::Drawer(int* argc, char** argv){
 	glEnable(GL_MULTISAMPLE);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glPointSize(8.0);	
-//	glFrontFace()//设定正反面winding order
+	glPointSize(8.0);		
 //	glCullFace()//剔除面
 	/* Callback functions */
 	glutDisplayFunc(display);
@@ -411,8 +411,7 @@ Drawer::Drawer(int* argc, char** argv){
 	InitMatrix();
 	InitBuffer();
 	m_pEvaluator = nullptr;
-	m_pMmarching = nullptr;		
-	m_hEvent = CreateEvent(NULL, FALSE, FALSE, "Event");	
+	m_pMmarching = nullptr;			
 }
 
 bool Drawer::set_march(Marching* m){

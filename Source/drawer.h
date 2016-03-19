@@ -13,9 +13,7 @@ public:
 	void SetGridSize(float);
 	void SetStepMode(bool);
 	void SetEquation(string);
-	void ResetStep();
-	HANDLE m_hEvent;
-	
+	void ResetStep();	
 private:
 	Marching* m_pMmarching;
 	Evaluator* m_pEvaluator;		
