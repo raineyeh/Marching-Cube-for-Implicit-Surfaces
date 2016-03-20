@@ -12,7 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "glslprogram.h"
+#include "ShaderLib.h"
 #include "tinycthread.h"
 #include "vao.h"
 #include "MyFile.h"
@@ -27,20 +27,20 @@ int windowID = -1;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char buf[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";// x^2+y^2-0.5
+static char buf[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";//x^2+y^2-0.5
 static float fGrid = 0.25f;
 static float fInterval = 0.2f;
 static bool bStepMode, bTranslucent, bInvertFace;
 bool bPressed,bHasInit, bMovie, bPause;
-int last_mx = 0, last_my = 0, cur_mx = 0, cur_my = 0;
+int nLastX = 0, nLastY = 0, nCurX = 0, nCurY = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
 // objects 
 MyFile myfile;
 Drawer* pDrawer = nullptr;
-GLSLProgram program;
-thrd_t movie_thread;
+ShaderLib ModelShader;
+thrd_t MovieThread;
 //cube idx
 unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 4, 7, 4, 3, 0, 4, 5, 6, 6, 7, 4 };
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
@@ -116,12 +116,12 @@ void DrawGUI()
 					   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
+/*	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
 			bMovie = false;
 			bPause = false;
-			thrd_join(movie_thread, NULL);
-			movie_thread = 0;
+			thrd_join(MovieThread, NULL);
+			MovieThread = 0;
 			for (int i = 0; i < 3; i++)
 				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);									
 		}
@@ -136,9 +136,9 @@ void DrawGUI()
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
-			thrd_create(&movie_thread, Movie, NULL);				
+			thrd_create(&MovieThread, Movie, NULL);				
 		}		
-	}
+	}*/
 	if (bMovie){
 		ImGui::SameLine();
 		if (ImGui::Button(bPause?"Resume":"Pause")){
@@ -171,7 +171,7 @@ void DrawGUI()
 			glDisable(GL_DEPTH_TEST); 
 		else
 			glEnable(GL_DEPTH_TEST);	
-		program.setUniform("uTranslucent", bTranslucent);
+		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (ImGui::Checkbox("Invert Face", &bInvertFace)){		
 		if (bInvertFace)
@@ -209,23 +209,23 @@ glm::vec3 GetArcballVector(int x, int y) {
 
 void Arcball() {	
 	// Handle 
-	if (cur_mx != last_mx || cur_my != last_my) {
-		glm::vec3 va = GetArcballVector(last_mx, last_my);
-		glm::vec3 vb = GetArcballVector(cur_mx, cur_my);
+	if (nCurX != nLastX || nCurY != nLastY) {
+		glm::vec3 va = GetArcballVector(nLastX, nLastY);
+		glm::vec3 vb = GetArcballVector(nCurX, nCurY);
 		float angle = acos(min(1.0f, glm::dot(va, vb)));
 		glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
 		glm::mat3 camera2object = glm::inverse(glm::mat3(V) * glm::mat3(M));
 		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
 		M = glm::rotate(M, angle, axis_in_object_coord);
-		last_mx = cur_mx;
-		last_my = cur_my;
+		nLastX = nCurX;
+		nLastY = nCurY;
 	}
 
 	// Model
 	// call in main_object.draw() - main_object.M
-	program.setUniform("M", M);
-	program.setUniform("V", V);
-	program.setUniform("P", P);
+ 	ModelShader.setUniform("M", M);
+	ModelShader.setUniform("V", V); 
+ 	ModelShader.setUniform("P", P);
 }
 void DrawCube(){
 	if (!bStepMode) return;	
@@ -237,7 +237,7 @@ void DrawCube(){
 	//cube	
 	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
 	glm::vec4 color = glm::vec4(0.0f, 0.0f, 1.0f, 0.2f);	
-	program.setUniform("ucolor", color);
+	ModelShader.setUniform("ucolor", color);
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
@@ -245,7 +245,7 @@ void DrawCube(){
 	//edge
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
 	color = glm::vec4(0.5f, 0.5f, 0.5f, 0.8f);
-	program.setUniform("ucolor", color);
+	ModelShader.setUniform("ucolor", color);
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_LINE_STRIP, 30, GL_UNSIGNED_INT, 0);
 	
@@ -253,14 +253,14 @@ void DrawCube(){
 	int n = 0;
 	for (auto p : pData->step_data.corner_values){
 		color = p < 0 ? glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) : glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-		program.setUniform("ucolor", color);
+		ModelShader.setUniform("ucolor", color);
 		glDrawArrays(GL_POINTS, n++, 1);		
 	}
 		
 	//intersect	
 	glBindVertexArray(vao[2]);
 	color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-	program.setUniform("ucolor",color);
+	ModelShader.setUniform("ucolor",color);
 	glDrawArrays(GL_POINTS, 0, pData->step_data.intersect_coord.size()/3);
 		
 	glBindVertexArray(0);	
@@ -270,12 +270,12 @@ void DrawModel(){
 	
 	glBindVertexArray(vao[0]);
 	glm::vec4 color = glm::vec4(0.3f, 0.1f, 0.1f, bTranslucent ? 0.5f : 1.0f);
-	program.setUniform("ucolor", color);
+	ModelShader.setUniform("ucolor", color);
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
-	program.setUniform("ucolor", color);
+	ModelShader.setUniform("ucolor", color);
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -325,9 +325,10 @@ void special(int key, int x, int y){
 
 void motion(int x, int y){
 	ImGui_ImplGlut_MouseMotionCallback(x, y);
-	if (bPressed) {  // if left button is pressed
-		cur_mx = x;
-		cur_my = y;
+	if (bPressed && x < windowHeight)
+	 {  // if left button is pressed
+		nCurX = x;
+		nCurY = y;
 	}
 }
 
@@ -336,8 +337,10 @@ void mouse(int button, int state, int x, int y)
 	ImGui_ImplGlut_MouseButtonCallback(button, state);
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		bPressed = true;
-		last_mx = cur_mx = x;
-		last_my = cur_my = y;
+		if (x < windowHeight){
+			nLastX = nCurX = x;
+			nLastY = nCurY = y;
+		}
 	}
 	else {
 		bPressed = false;
@@ -355,12 +358,12 @@ void reshape(int w, int h){
 
 void CompileAndLinkShader(){
 	try {
-		program.compileShader(vertex_shader.c_str(), GLSLShader::VERTEX);
-		program.compileShader(fragment_shader.c_str(), GLSLShader::FRAGMENT);
-		program.link();
-		program.use();
+		ModelShader.compileShader(vertex_shader.c_str(), GLSLShader::VERTEX);
+		ModelShader.compileShader(fragment_shader.c_str(), GLSLShader::FRAGMENT);
+		ModelShader.link();
+		ModelShader.use();
 	}
-	catch (GLSLProgramException & e) {
+	catch (ShaderLibException & e) {
 		cerr << e.what() << endl;
 		system("pause");
 	//	exit(EXIT_FAILURE);
@@ -373,7 +376,7 @@ void InitMatrix(){
 }
 void InitBuffer(){	
 	for (int i = 0; i < 3;i++){
-		CreateBuffer(program.getHandle(),vao[i],vbo[i],ibo[i]);
+		CreateBuffer(ModelShader.getHandle(),vao[i],vbo[i],ibo[i]);
 	}	
 }
 Drawer::Drawer(int* argc, char** argv){

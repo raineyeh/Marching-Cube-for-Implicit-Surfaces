@@ -45,9 +45,6 @@
     <ClCompile Include="..\..\Source\MyFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\glslprogram.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Source\tinycthread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -92,10 +89,10 @@
     <ClInclude Include="..\..\Source\MyFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\glslprogram.h">
+    <ClInclude Include="..\..\Source\tinycthread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\tinycthread.h">
+    <ClInclude Include="..\..\Source\ShaderLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,29 @@
-#ifndef GLSLPROGRAM_H
-#define GLSLPROGRAM_H
+#ifndef SHADERLIB_H
+#define SHADERLIB_H
+/* Windows static library */
+#   ifdef SHADERLIB_STATIC
+
+#       define SLAPI
+#       define SLAPIENTRY
+
+/* Link with Win32 static  lib */
+#       if SHADERLIB_LIB_PRAGMAS
+#           pragma comment (lib, "shaderlib_static.lib")
+#       endif
+
+/* Windows shared library (DLL) */
+#   else
+#       define SLAPIENTRY __stdcall
+#       if defined(SHADERLIB_EXPORTS)
+#           define SLAPI __declspec(dllexport)
+#       else
+#           define SLAPI __declspec(dllimport)
+#           pragma comment (lib, "shaderlib.lib")
+#       endif
+#   endif
 
 #pragma warning( disable : 4290 )
+
 
 #include <GL/glew.h>
 #include <string>
@@ -17,9 +39,9 @@ using glm::mat3;
 
 #include <stdexcept>
 
-class GLSLProgramException : public std::runtime_error {
+class ShaderLibException : public std::runtime_error {
   public:
-    GLSLProgramException( const string & msg ) :
+    ShaderLibException( const string & msg ) :
       std::runtime_error(msg) { }
 };
 
@@ -33,34 +55,35 @@ namespace GLSLShader {
     COMPUTE = GL_COMPUTE_SHADER
   };
 };
-
-class GLSLProgram
+template class SLAPI std::map<string, int>;
+class SLAPI ShaderLib
 {
   private:
     int  handle;
     bool linked;
-    std::map<string, int> uniformLocations;
+	
+	std::map<string, int> uniformLocations;
 
     GLint  getUniformLocation(const char * name );
     bool fileExists( const string & fileName );
     string getExtension( const char * fileName );
 
     // Make these private in order to make the object non-copyable
-    GLSLProgram( const GLSLProgram & other ) { }
-    GLSLProgram & operator=( const GLSLProgram &other ) { return *this; }
+    ShaderLib( const ShaderLib & other ) { }
+    ShaderLib & operator=( const ShaderLib &other ) { return *this; }
 
   public:
-    GLSLProgram();
-    ~GLSLProgram();
+    ShaderLib();
+    ~ShaderLib();
 
-    void   compileShader( const char *fileName ) throw (GLSLProgramException);
-    void   compileShader( const char * fileName, GLSLShader::GLSLShaderType type ) throw (GLSLProgramException);
+    void   compileShader( const char *fileName ) throw (ShaderLibException);
+    void   compileShader( const char * fileName, GLSLShader::GLSLShaderType type ) throw (ShaderLibException);
     void   compileShader( const string & source, GLSLShader::GLSLShaderType type, 
-        const char *fileName = NULL ) throw (GLSLProgramException);
+        const char *fileName = NULL ) throw (ShaderLibException);
 
-    void   link() throw (GLSLProgramException);
-    void   validate() throw(GLSLProgramException);
-    void   use() throw (GLSLProgramException);
+    void   link() throw (ShaderLibException);
+    void   validate() throw(ShaderLibException);
+    void   use() throw (ShaderLibException);
 
     int    getHandle();
     bool   isLinked();
@@ -86,4 +109,4 @@ class GLSLProgram
     const char * getTypeString( GLenum type );
 };
 
-#endif // GLSLPROGRAM_H
+#endif // SHADERLIB_H
