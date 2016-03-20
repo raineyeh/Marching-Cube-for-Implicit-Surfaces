@@ -116,7 +116,7 @@ void DrawGUI()
 					   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);		
 	}
 	ImGui::SameLine();
-/*	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
+	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
 			bMovie = false;
 			bPause = false;
@@ -138,7 +138,7 @@ void DrawGUI()
 			pDrawer->GetPolyData();
 			thrd_create(&MovieThread, Movie, NULL);				
 		}		
-	}*/
+	}
 	if (bMovie){
 		ImGui::SameLine();
 		if (ImGui::Button(bPause?"Resume":"Pause")){
