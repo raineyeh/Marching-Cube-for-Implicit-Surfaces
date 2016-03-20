@@ -4,7 +4,7 @@ using namespace std;
 
 Evaluator::Evaluator()
 {
-	equation = "";
+	equation = "x+y";
 	token.clear();
 }
 
@@ -13,9 +13,17 @@ Evaluator::Evaluator(std::string s) {
 }
 
 bool Evaluator::set_equation(std::string s) {
+	string old_eq = equation;
 	equation = s;
-	token.clear();
 	tokenizer();
+
+	if (!check_bug()){
+		equation = old_eq;
+		tokenizer();
+		return false;
+	}
+
+	//not sure this is needed. both stacks should be empty already. -R
 	while (!operator_stack.empty())
 	{
 		operator_stack.pop();
@@ -28,21 +36,21 @@ bool Evaluator::set_equation(std::string s) {
 }
 bool Evaluator::check_bug()
 {
-	if (token.size() == 0) { std::cout<< "empty string" << endl; return false; }
+	if ( token.size() == 0) { std::cout<< "empty string" << endl; return false; }
 	int open_brace = 0;
 	for (int i = 0; i < token.size(); i++)
 	{ 
-		if (is_open_brace(token[i].at(0)))
-		{
+		char ch = token[i].at(0);
+		if (is_open_brace(ch)){
 			open_brace++;
 		}
-		else if (is_close_brace(token[i].at(0)))
-		{open_brace--;
+		else if (is_close_brace(ch)){
+			open_brace--;
+			if (open_brace == -1){
+				std::cout << "wrong braces" << endl; return false;
+			}
 		}
-		if (open_brace == -1)
-		{
-			std::cout << "wrong braces" << endl; return false;
-		}
+		
 	}//end for
 
 	if (open_brace == 0) return true;
@@ -50,134 +58,150 @@ bool Evaluator::check_bug()
 		std::cout << "wrong braces" << endl; return false;
 	}
 }
+
+void Evaluator::evaluate_op(){
+	char temp = operator_stack.top(); operator_stack.pop();  //cout << "pop opt stack" << temp << endl;
+	float val1 = operand_stack.top(); operand_stack.pop();   // cout << "pop op stack" << val1 << endl;
+	float val2 = operand_stack.top(); operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
+	float result = evaluate_operation(temp, val2, val1);     //  cout << "pop opt stack" << val2 << endl;
+	operand_stack.push(result);
+}
+
+
 float Evaluator::evaluate(float x, float y, float z) {
-	{//start evaluate 
-		
-		if (!(check_bug())) return NAN;
+	//start evaluate 
+
+//		if (!(check_bug())) return NAN; //moved to set_equation()
+
 		for (int i = 0; i < token.size(); i++)
 		{//start of for
-			char ch = token[i].at(0);
-			//cout << ch<< is_number(ch)<<endl;
-			if (is_variable(ch))
+			int tok_size = token[i].size();
+			char ch1 = token[i].at(0);
+			char ch2;
+			if (tok_size>1)
+				ch2 = token[i].at(1);
+
+			//cout << ch1<< is_number(ch1)<<endl;
+			if (is_variable(ch1))
 			{
-				if (ch == 'x' || ch == 'X') {
+				if (ch1 == 'x' || ch1 == 'X') {
 					operand_stack.push(x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
-				else if (ch == 'y' || ch == 'Y') {
+				else if (ch1 == 'y' || ch1 == 'Y') {
 					operand_stack.push(y); //std::cout << "stack so from var " << operand_stack.top() << endl;
 				}
-				else if (ch == 'z' || ch == 'Z') {
+				else if (ch1 == 'z' || ch1 == 'Z') {
 					operand_stack.push(z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
 				}
 				else
 				{
-					std::cout << "not an accepted variable ";
+					std::cout <<"'"<< ch1 << "' is not an accepted variable ";
 					return NAN;
 				}
 			}
-			if ((token[i].size() == 2) && (token[i].at(0) == '-') && is_variable(token[i].at(1)))
-				{
-					if (token[i].at(1) == 'x' || token[i].at(1) == 'X') {
+			else if ((tok_size == 2) && (ch1 == '-') && is_variable(ch2))	{
+				if (ch2 == 'x' || ch2 == 'X') {
 					operand_stack.push(-1 * x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
-					}
-					else if (token[i].at(1) == 'y' || token[i].at(1) == 'Y') {
-					operand_stack.push(-1 * y); //std::cout << "stack so from var " << operand_stack.top() << endl;
-					}
-					else if (token[i].at(1) == 'z' || token[i].at(1) == 'Z') {
-					operand_stack.push(-1 * z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
-					}
 				}
-					
-			if (     (token[i].size()>=1)   &&    (is_number(token[i].at(0))|| is_number(token[i].at(0))))
-					{
-						std::string::size_type sz = token[i].size();
-						float  d = stof(token[i], &sz);
-						//cout << "d="<< d << endl;
-						operand_stack.push(d);
-						//std::cout << "stack ss from number stof   = " << operand_stack.top() << endl;
-					}
-				
-				if (isoperator(ch) && token[i].size() == 1)
-				{//start evaluating when operators arrive 
-				 //cout << ch <<" "<< isoperator(ch) <<" "<< endl;
-				 //case open brace 
-					if (is_open_brace(ch))
-						operator_stack.push(ch);
-					//this part for testing closed brace we will do every calcualtion until the open brace
-					if (is_close_brace(ch))
-					{
-						//cout << "hi close brace" << endl;
+				else if (ch2 == 'y' || ch2 == 'Y') {
+					operand_stack.push(-1 * y); //std::cout << "stack so from var " << operand_stack.top() << endl;
+				}
+				else if (ch2 == 'z' || ch2 == 'Z') {
+					operand_stack.push(-1 * z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
+				}
+				else
+				{
+					std::cout << "'" << ch1 << "' is not an accepted variable ";
+					return NAN;
+				}
+			}
+
+			else if ((tok_size >= 1) && (is_number(ch1) || is_number(ch1)))
+			{
+				std::string::size_type sz = tok_size;
+				float  d = stof(token[i], &sz);
+				//cout << "d="<< d << endl;
+				operand_stack.push(d);
+				//std::cout << "stack ss from number stof   = " << operand_stack.top() << endl;
+			}
+
+			else if (isoperator(ch1) && tok_size == 1)
+			{//start evaluating when operators arrive 
+				//cout << ch1 <<" "<< isoperator(ch1) <<" "<< endl;
+				//case open brace 
+				if (is_open_brace(ch1))
+					operator_stack.push(ch1);
+				//this part for testing closed brace we will do every calcualtion until the open brace
+				else if (is_close_brace(ch1))
+				{
+					//cout << "hi close brace" << endl;
 
 
-						while (!(is_open_brace(operator_stack.top())))
-						{//start while
-							char temp = operator_stack.top(); operator_stack.pop();  //cout << "pop opt stack" << temp << endl;
-							float val1 = operand_stack.top(); operand_stack.pop();   // cout << "pop op stack" << val1 << endl;
-							float val2 = operand_stack.top(); operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
-							float result = evaluate_operation(temp, val2, val1);     //  cout << "pop opt stack" << val2 << endl;
-							operand_stack.push(result);
-						}//end while
-						operator_stack.pop();
-					}//end of closed brace 
+					while (!(is_open_brace(operator_stack.top())))
+					{//start while
+						evaluate_op();
+					}//end while
+					operator_stack.pop();
+				}//end of closed brace 
 
-					if (isoperator(ch) && !(is_open_brace(ch)) && !(is_close_brace(ch)))
-					{//start other operator if
-						while (true)
-						{//start of while
-							if ((operator_stack.empty()) || (operator_precedence(ch) > operator_precedence(operator_stack.top())
-								|| (is_open_brace(operator_stack.top()))))
-							{
-								operator_stack.push(ch); //cout << "operator_stack_push case " << ch << endl;
-								break;
-							}
-							//if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
-							char temp = operator_stack.top(); operator_stack.pop();   //cout << "pop op stack" << temp << endl;
-							float val1 = operand_stack.top(); operand_stack.pop(); //cout << "pop oprand stack" << val1 << endl;
-							float val2 = operand_stack.top(); operand_stack.pop();  //cout << "pop opt stack" << val2 << endl;
-							float result = evaluate_operation(temp, val2, val1);
-							operand_stack.push(result);  // cout << "push result stack" << result << endl;
-						}//end of while
-					}// 
-				}//
+				else if (isoperator(ch1) && !(is_open_brace(ch1)) && !(is_close_brace(ch1)))
+				{//start other operator if
+					while (true)
+					{//start of while
+						if ((operator_stack.empty()) || (operator_precedence(ch1) > operator_precedence(operator_stack.top())
+							|| (is_open_brace(operator_stack.top()))))
+						{
+							operator_stack.push(ch1); //cout << "operator_stack_push case " << ch1 << endl;
+							break;
+						}
+						//if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
+						evaluate_op();
+					}//end of while
+				}// 
+			}//
 		} //
-		char temp; float val1, val2, result;
+		
 		while (!operator_stack.empty()) {
-			temp = operator_stack.top();   	operator_stack.pop();   //cout << "pop op stack" << temp << endl;
-			//if (operand_stack.size() < 2) { cout << "no operand available" << endl; break; return NAN; }
-			val1 = operand_stack.top();		operand_stack.pop();   //cout << "pop oprand stack" << val1 << endl;
-			val2 = operand_stack.top();		operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
-			result = evaluate_operation(temp, val2, val1);
-			operand_stack.push(result);
+			evaluate_op();
 		}//end of while
 
 		//cout << "the final result of the equation =" << operand_stack.top();
-		return operand_stack.top();
-	} //end evaluater 
-}
-int Evaluator::operator_precedence(char ch)
-{
+		float result = operand_stack.top();
+		operand_stack.pop();
+
+		return result;
+	
+} //end evaluater 
+
+
+
+int Evaluator::operator_precedence(char ch){
 	switch (ch)
 	{
-	case '^': return 3; break;
-	case '/': return 2; break;
-	case '*': return 2; break;
-	case '+':return 1; break;
-	case '-': return 1; break;
-	case '(':return 0; break;
-	case ')':return 0; break;
-	default:return -1 ;  //cout << "no such operation " << endl;
+	case '^': return 3;
+	case '/': return 2;
+	case '*': return 2;
+	case '+': return 1;
+	case '-': return 1;
+	case '(': return 0;
+	case ')': return 0;
+	default: return -1;  //cout << "no such operation " << endl;
 	}
 }
- float Evaluator::evaluate_operation(char ch, float val1, float val2)
-{
-	if (ch == '+') return val1 + val2;
-	if (ch == '-') return val1 - val2;
-	if (ch == '*') return val1 * val2;
-	if (ch == '/') return val1 / val2;
-	if (ch == '^') return pow(val1, val2);
+
+float Evaluator::evaluate_operation(char ch, float val1, float val2){
+	 switch (ch){
+	 case '+': return val1 + val2;
+	 case '-': return val1 - val2;
+	 case '*': return val1 * val2;
+	 case '/': return val1 / val2;
+	 case '^': return pow(val1, val2);
+	 }
 }
+
 void Evaluator::tokenizer()
 {
+	token.clear();
 	//to remove any spaces from the equation 
 	equation.erase(std::remove(equation.begin(), equation.end(), ' '), equation.end());
 	//now no spaces in equation 

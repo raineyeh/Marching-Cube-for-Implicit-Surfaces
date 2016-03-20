@@ -8,6 +8,7 @@
 #include<stack>
 #include<algorithm>
 #include <math.h>
+#include "simple_stack.h"
 /** An object that takes an input string (ie. "x^2+y-z^3) and can evaluate it for any x,y,z.
 * The evaluate function will be called for every point of the marching cube vertices, and more.
 */
@@ -19,8 +20,10 @@ class Evaluator {
 private:
 	vector<string>token;
 	string equation;
-	stack<char>operator_stack;
-	stack<float>operand_stack;
+	//stack<char>operator_stack;
+	//stack<float>operand_stack;
+	Simple_Stack<char> operator_stack;
+	Simple_Stack<float> operand_stack;
 
 	inline bool isoperator(char ch) { return ((ch == '+') || (ch == '-') || (ch == '*') || (ch == '/') || (ch == '^') || (ch == '(') || (ch == ')')); }
 	inline bool is_open_brace(char ch) { return (ch == '('); }
@@ -40,6 +43,7 @@ private:
 	int operator_precedence(char ch);
 	void tokenizer();
 	float evaluate_operation(char ch, float val1, float val2);
+	void evaluate_op();
 	bool check_bug();//parser bug
 
 public:
