@@ -19,15 +19,15 @@
 using namespace std;
 
 /* Window information */
-float windowWidth = 1050;
-float windowHeight = 700;
-float barwidth = 350;
+float nWindowWidth = 1050;
+float nWindowHeight = 700;
+float nBarWidth = 350;
 int windowID = -1;
 /* Data information */
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char buf[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";//x^2+y^2-0.5
+static char szInput[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";//x^2+y^2-0.5
 static float fGrid = 0.25f;
 static float fInterval = 0.2f;
 static bool bStepMode, bTranslucent, bInvertFace;
@@ -91,13 +91,13 @@ static int Movie(void*)
 void DrawGUI()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube");
-	ImVec2 wsize(barwidth, windowHeight);
+	ImVec2 wsize(nBarWidth, nWindowHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
-	ImVec2 wpos(windowWidth - barwidth, 0);
+	ImVec2 wpos(nWindowWidth - nBarWidth, 0);
 	ImGui::SetWindowPos(wpos);
 	if (!bMovie)
-		ImGui::InputText("Polynomial", buf, 256, 0);
+		ImGui::InputText("Polynomial", szInput, 256, 0);
 	if (!bMovie && ImGui::SliderFloat("Grid size", &fGrid, 0.1f, 0.5f)){
 		if (pDrawer)
 			pDrawer->SetGridSize(fGrid);
@@ -107,7 +107,7 @@ void DrawGUI()
 			pDrawer->SetGridSize(fGrid);
 	}
 	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
-		pDrawer->SetEquation(string(buf));
+		pDrawer->SetEquation(string(szInput));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();
 		pDrawer->GetPolyData();		
@@ -132,7 +132,7 @@ void DrawGUI()
 			if (pDrawer == nullptr) return;
 			pDrawer->ResetStep();
 			pDrawer->SetStepMode(true);			
-			pDrawer->SetEquation(string(buf));
+			pDrawer->SetEquation(string(szInput));
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
@@ -195,8 +195,8 @@ void DrawGUI()
 	bHasInit = true;	
 }
 glm::vec3 GetArcballVector(int x, int y) {
-	glm::vec3 P = glm::vec3(1.0*x / windowWidth * 2 - 1.0,
-		1.0*y / windowHeight * 2 - 1.0,
+	glm::vec3 P = glm::vec3(1.0*x / nWindowWidth * 2 - 1.0,
+		1.0*y / nWindowHeight * 2 - 1.0,
 		0);//屏幕坐标系变为[-1,1]
 	P.y = -P.y;
 	float OP_squared = P.x * P.x + P.y * P.y;
@@ -313,7 +313,7 @@ void special(int key, int x, int y){
 	{
 	case GLUT_KEY_RIGHT:
 		if (pDrawer) {
-			pDrawer->SetEquation(string(buf));
+			pDrawer->SetEquation(string(szInput));
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
 		}			
@@ -325,7 +325,7 @@ void special(int key, int x, int y){
 
 void motion(int x, int y){
 	ImGui_ImplGlut_MouseMotionCallback(x, y);
-	if (bPressed && x < windowHeight)
+	if (bPressed && x < nWindowWidth - nBarWidth)
 	 {  // if left button is pressed
 		nCurX = x;
 		nCurY = y;
@@ -337,7 +337,7 @@ void mouse(int button, int state, int x, int y)
 	ImGui_ImplGlut_MouseButtonCallback(button, state);
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 		bPressed = true;
-		if (x < windowHeight){
+		if (x < nWindowWidth - nBarWidth){
 			nLastX = nCurX = x;
 			nLastY = nCurY = y;
 		}
@@ -351,9 +351,9 @@ void idle(){
 	glutPostRedisplay();
 }
 void reshape(int w, int h){
-	glViewport(0, 0, w - barwidth, h);
-	windowWidth = w;
-	windowHeight = h;
+	glViewport(0, 0, w - nBarWidth, h);
+	nWindowWidth = w;
+	nWindowHeight = h;
 }
 
 void CompileAndLinkShader(){
@@ -384,7 +384,7 @@ Drawer::Drawer(int* argc, char** argv){
 	/* Initialize the GLUT window */
 	glutInit(argc, argv);
 	
-	glutInitWindowSize(windowWidth, windowHeight);
+	glutInitWindowSize(nWindowWidth, nWindowHeight);
 	glutInitWindowPosition(30, 30);
 	glutSetOption(GLUT_MULTISAMPLE, 4); //Set number of samples per pixel
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
