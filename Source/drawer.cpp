@@ -27,7 +27,7 @@ int windowID = -1;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char szInput[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";//x^2+y^2-0.5
+static char szInput[256] = "x+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
 static float fGrid = 0.25f;
 static float fInterval = 0.2f;
 static bool bStepMode, bTranslucent, bInvertFace;
@@ -255,8 +255,8 @@ void DrawCube(){
 		color = p < 0 ? glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) : glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 		ModelShader.setUniform("ucolor", color);
 		glDrawArrays(GL_POINTS, n++, 1);		
-	}
-		
+	}	
+
 	//intersect	
 	glBindVertexArray(vao[2]);
 	color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
@@ -287,7 +287,7 @@ void display()
 	Arcball();
 	DrawCube();
 	DrawModel();
-	DrawGUI();
+	DrawGUI();	
 	glutSwapBuffers();
 }
 
