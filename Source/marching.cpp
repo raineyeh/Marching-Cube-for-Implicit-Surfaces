@@ -116,12 +116,12 @@ bool Marching::recalculate(){
 	}
 	else{
 		float x_0, x_1, y_0, y_1, z_0, z_1;
-		if (this->poly_data.step_data.step_i == 0){ //last step 
+		if (this->poly_data.step_data.step_i == 1){ //last step 
 			add_step_to_poly_data();
-			this->poly_data.step_data.step_i = -1;
+			this->poly_data.step_data.step_i = 0;
 			return true;
 		}
-		if (this->poly_data.step_data.step_i == -1){ //finished steps already. no updates
+		if (this->poly_data.step_data.step_i == 0){ //finished steps already. no updates
 			return false;
 		}
 		if (this->poly_data.step_data.step_i == -2){ //first step
@@ -144,7 +144,7 @@ bool Marching::recalculate(){
 			this->poly_data.step_data.step_i *= this->poly_data.step_data.step_i * this->poly_data.step_data.step_i;
 
 		}
-		else{
+		else{ // n step
 			x_0 = this->poly_data.step_data.corner_coords[3]; //x_1 from last step 
 			y_0 = this->poly_data.step_data.corner_coords[4]; //y_0 from last step
 			z_0 = this->poly_data.step_data.corner_coords[5]; //z_0 from last step
@@ -163,11 +163,8 @@ bool Marching::recalculate(){
 		y_1 = y_0 + this->grid_step_size;
 		z_1 = z_0 + this->grid_step_size;
 
-		//cout << this->poly_data.step_data.step_i << " :";
-		if (this->poly_data.step_data.step_i > 0){
-			add_step_to_poly_data();
-			this->do_square(x_0, x_1, y_0, y_1, z_0, z_1);
-		}
+		add_step_to_poly_data();
+		this->do_square(x_0, x_1, y_0, y_1, z_0, z_1);
 		
 	}
 
@@ -334,8 +331,9 @@ void Marching::add_step_to_poly_data(){
 		float x = step->intersect_coord[i];
 		float y = step->intersect_coord[i+1];
 		float z = step->intersect_coord[i+2];
-		if (!isnan(x))
-			v_i_list[i/3] = add_point(x, y, z);
+		if (!isnan(x)){
+			v_i_list[i / 3] = add_point(x, y, z);
+		}
 	}
 
 	//add triangles
