@@ -3,7 +3,9 @@
 
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include "evaluator.h"
+#include <set>
 
 struct Step_Data{
 	int step_i; //indicates which step this is at. 0~n*n: step count down. -1: finished, -2:not started
@@ -20,7 +22,14 @@ struct Poly_Data{
 	Step_Data step_data;
 };
 
-
+struct xyz{
+	float x, y, z; int idx;
+	xyz(float xt, float yt, float zt, int i){ x = xt; y = yt; z = zt; idx = i; };
+	xyz(float xt, float yt, float zt){ x = xt; y = yt; z = zt; idx = -1; };
+	bool operator<(const xyz& rhs) const{
+		return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
+	}
+};
 
 class Marching
 {
@@ -54,6 +63,7 @@ private:
 	float surface_constant;
 	float surface_step;
 	bool is_repeating_surface;
+	set<xyz> vertex_set;
 
 };
 

@@ -99,6 +99,7 @@ bool Marching::recalculate(){
 
 		this->poly_data.tri_list.clear();
 		this->poly_data.vertex_list.clear();
+		this->vertex_set.clear();
 
 		float x_0, x_1, y_0, y_1, z_0, z_1;
 		for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size){ 
@@ -127,14 +128,11 @@ bool Marching::recalculate(){
 		if (this->poly_data.step_data.step_i == -2){ //first step
 			this->poly_data.tri_list.clear();
 			this->poly_data.vertex_list.clear();
+			this->vertex_set.clear();
 			this->poly_data.step_data.intersect_coord.clear();
 			this->poly_data.step_data.tri_vlist.clear();
-			
-			x_0 = -1; y_0 = -1; z_0 = -1;
 
-			this->poly_data.tri_list.clear();
-			this->poly_data.vertex_list.clear();
-			this->poly_data.step_data.intersect_coord.clear();
+			x_0 = -1; y_0 = -1; z_0 = -1;
 
 			//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
 			this->poly_data.step_data.step_i = 0;
@@ -349,13 +347,20 @@ void Marching::add_step_to_poly_data(){
 
 int Marching::add_point(float xval, float yval, float zval){
 	int new_vertex_i = this->poly_data.vertex_list.size() / 3;
-	this->poly_data.vertex_list.push_back(xval);
-	this->poly_data.vertex_list.push_back(yval);
-	this->poly_data.vertex_list.push_back(zval);
+	//cout << new_vertex_i <<	"  " << xval << "\t" << yval << "\t" << zval  ;
+	int v_i_found = vertex_set.insert(xyz(xval, yval, zval, new_vertex_i)).first->idx;
+	if (v_i_found == new_vertex_i)
+	{
+		this->poly_data.vertex_list.push_back(xval);
+		this->poly_data.vertex_list.push_back(yval);
+		this->poly_data.vertex_list.push_back(zval);
+	}
+	else{
+		//cout << "\t->"<< v_i_found;
+	}
+	//cout << endl;
 	
-	//std::cout << xval << "\t" << yval << "\t" << zval << ";"<< std::endl;
-	
-	return new_vertex_i;
+	return v_i_found;
 }
 
 int Marching::add_triangle(int p1, int p2, int p3){
