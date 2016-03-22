@@ -23,6 +23,7 @@ float nWindowWidth = 1050;
 float nWindowHeight = 700;
 float nBarWidth = 350;
 int windowID = -1;
+float nColor = 48;
 /* Data information */
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
@@ -30,7 +31,14 @@ static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char szInput[256] = "x+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
 static float fGrid = 0.25f;
 static float fInterval = 0.2f;
+static float fPercent;
 static bool bStepMode, bTranslucent, bInvertFace;
+static ImVec4 cBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
+static ImVec4 cModel = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
+static ImVec4 cEdge = ImColor(1.0f, 0.0f, 1.0f, 1.0f);
+static ImVec4 cIntersectPointr = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
+static ImVec4 cInCornerPointr = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
+static ImVec4 cOutCornerPointr = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
 bool bPressed,bHasInit, bMovie, bPause;
 int nLastX = 0, nLastY = 0, nCurX = 0, nCurY = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
@@ -74,9 +82,14 @@ void SetStepData(){
 
 static int Movie(void*)
 {		
-	if (pDrawer == nullptr) return true;		
-	for (int i = 0; bMovie && pData && i != pData->step_data.step_i;){
+	if (pDrawer == nullptr) return false;
+	if (pData == nullptr) return false;
+	float fTotalStep = (float)pData->step_data.step_i;
+	
+	for (int i = 0; bMovie && i != pData->step_data.step_i;){
 		if (bPause) continue;
+		fPercent = pData->step_data.step_i / fTotalStep;
+		fPercent = 1.0f - fPercent;
 		pDrawer->Recalculate();
 		SetStepData();	
 		Sleep(50);		
@@ -85,6 +98,7 @@ static int Movie(void*)
 	pDrawer->ResetStep();
 	bStepMode = false;
 	bMovie = false;		
+	fPercent = 0;
 	_endthread();	
 	return true;
 }
@@ -173,24 +187,29 @@ void DrawGUI()
 			glEnable(GL_DEPTH_TEST);	
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
-	if (ImGui::Checkbox("Invert Face", &bInvertFace)){		
+	if (ImGui::Checkbox("Invert Face", &bInvertFace)){	
 		if (bInvertFace)
 			glFrontFace(GL_CW);
 		else
 			glFrontFace(GL_CCW);		
 	}
-	char ch[15] = {0};
+	if (bMovie){
+		ImVec2 psize(nBarWidth, 30);
+		ImGui::ProgressBar(fPercent, psize);
+	}	
+	ImGui::Text("Background color");  ImGui::SameLine();
+	if (ImGui::ColorPlate(&cBackground,"Background color")){
+		glClearColor(cBackground.x, cBackground.y, cBackground.z, 1.0f);
+	}	
+	ImGui::Text("Model color"); ImGui::SameLine();	 	
+	ImGui::ColorPlate(&cModel, "Model color");
+	ImGui::Text("Edge color"); ImGui::SameLine();
+	ImGui::ColorPlate(&cEdge, "Edge color");
+
+	char ch[20] = {0};
 	if (pData && bStepMode && pData->step_data.step_i>=0)
-		sprintf_s(ch, "Steps:%d", pData->step_data.step_i);
+		sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
 	ImGui::Text(ch);
-	ImVec4 col = ImVec4(1.0, 0.0, 0.0, 1.0);
-	ImGui::TextColored(col,"Red points for positive");
-	col = ImVec4(0.0, 1.0, 0.0, 1.0);
-	ImGui::TextColored(col, "Green points for negative");
-	col = ImVec4(0.0, 0.0, 1.0, 1.0);
-	ImGui::TextColored(col, "Blue points for intersect");
-	col = ImVec4(1.0, 1.0, 1.0, 1.0);
-	ImGui::TextColored(col, "Right arrow for next step");
 	ImGui::Render();
 	bHasInit = true;	
 }
@@ -235,16 +254,18 @@ void DrawCube(){
 	SetStepData();
 
 	//cube	
+	glDepthMask(false);
 	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
 	glm::vec4 color = glm::vec4(0.0f, 0.0f, 1.0f, 0.2f);	
 	ModelShader.setUniform("ucolor", color);
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
+	glDepthMask(false);
 	
 	//edge
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
-	color = glm::vec4(0.5f, 0.5f, 0.5f, 0.8f);
+	color = glm::vec4(cEdge.x, cEdge.y, cEdge.z,1.0f);
 	ModelShader.setUniform("ucolor", color);
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_LINE_STRIP, 30, GL_UNSIGNED_INT, 0);
@@ -269,7 +290,7 @@ void DrawModel(){
 	if (pData == nullptr) return;
 	
 	glBindVertexArray(vao[0]);
-	glm::vec4 color = glm::vec4(0.3f, 0.1f, 0.1f, bTranslucent ? 0.5f : 1.0f);
+	glm::vec4 color = glm::vec4(cModel.x, cModel.y, cModel.z, bTranslucent ? 0.5f : 1.0f);
 	ModelShader.setUniform("ucolor", color);
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 
@@ -413,6 +434,7 @@ Drawer::Drawer(int* argc, char** argv){
 	glutIdleFunc(idle);	
 	InitMatrix();
 	InitBuffer();
+	glClearColor(cBackground.x, cBackground.y, cBackground.z, 1.0f);
 	m_pEvaluator = nullptr;
 	m_pMmarching = nullptr;			
 }

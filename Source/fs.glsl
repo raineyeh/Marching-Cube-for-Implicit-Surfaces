@@ -19,33 +19,11 @@ float m2 = 0.2;
 
 void main(void)
 {   	
-
-	vec3 n = vec3(0);
-//	if(length(n_vs)!=0)
-//		n = n_vs;									//normalize 
-//	else
-		n = normalize(vec3(0.1,0,0));
-	vec3 l = normalize(l_pos - p_vs.xyz);			//world space light vector
-	vec3 v = normalize(cam_pos_vs.xyz - p_vs.xyz);  //world space view vector
-	vec3 r = normalize(reflect(-l, n));                        //world space reflection vector    	
-		
-	float f0 = (1.0 - Eta)/(1.0+Eta);
-	float f1 = pow(Eta,2);	
-	vec3 h = normalize(l+v);
-	float nh2 = pow(dot(n,h),2);
-	float tan2 = (1.0 - nh2)/nh2;
-	float cos4 = pow(nh2,2);
-
-	float F = f1 + (1.0-f1)*pow(1.0-dot(h,v),5);
-	float D = pow(e,-tan2/m2)/(4*m2*cos4);
-	float G = min(1, min(2.0*dot(n,h)*dot(n,v)/dot(v,h), 2.0*dot(n,h)*dot(n,l)/dot(v,h)));
-	vec4 lightColor =  (1 - uTranslucent) * (kd*max(dot(n, l), 0.0) + ks*F*D*G/(pi*dot(n,v)));
-	lightColor = max(vec4(0),lightColor);
 	if( gl_FrontFacing ){
-		fragcolor = ucolor + lightColor;
+		fragcolor = ucolor;
 	} 
 	else {
-		fragcolor = vec4(0.2,0.2,0.2,0.5) + lightColor;
+		fragcolor = vec4(0.2,0.2,0.2,0.5);
 	}	
 }
 
