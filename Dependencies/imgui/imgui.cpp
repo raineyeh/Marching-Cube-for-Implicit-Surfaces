@@ -5309,6 +5309,72 @@ bool ImGui::Button(const char* label, const ImVec2& size_arg)
 {
     return ButtonEx(label, size_arg, 0);
 }
+static ImGuiID PopupID;
+bool ImGui::ColorPlate(ImVec4* col,const char* label)
+{
+	ImGuiWindow* window = GetCurrentWindow();
+	if (window->SkipItems)
+		return false;
+
+	ImGuiState& g = *GImGui;
+	const ImGuiStyle& style = g.Style;
+	const ImGuiID id = window->GetID(label);
+	const float square_size = g.FontSize;
+	const ImRect bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(square_size + style.FramePadding.y * 2, square_size +  style.FramePadding.y * 2));
+	ItemSize(bb, style.FramePadding.y);
+	if (!ItemAdd(bb, &id))
+		return false;
+
+	bool hovered, held;
+	bool pressed = ButtonBehavior(bb, id, &hovered, &held);
+	
+	RenderFrame(bb.Min, bb.Max, GetColorU32(*col), true, style.FrameRounding);
+	bool bEnd = false;
+		
+	if (pressed)
+	{
+		ImGui::OpenPopup("color");
+		PopupID = id;
+	}		
+	else
+		ImGui::CloseCurrentPopup();
+	if (PopupID == id && ImGui::BeginPopup("color"))
+	{		
+		float r = 0.0f;
+		float g = 0.0f;
+		float b = 0.0f;
+		for (int i = 0; i < 8; i++)
+		{
+			for (int j = 0; j < 8; j++)
+			{
+				int sum = i * 8 + j;
+				if (sum % 8 != 0) ImGui::SameLine();
+				int m = i - 4;
+				int n = j - 4;
+				if (n < 0 && m < 0) g = 1;
+				if (0 <= n && m < 0) g = float(2.0f / 3.0f);
+				if (n < 0 && 0 <= m) g = float(1.0f / 3.0f);
+				if (0 <= n && 0 <= m) g = 0.0f;
+				r = float((3 - sum % 4) / 3.0f);
+				b = float((3 - i % 4) / 3.0f);
+				ImGui::PushID(sum);
+				ImGui::PushStyleColor(ImGuiCol_Button, ImColor(r, g, b));
+				ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImColor(r + 0.1f, g + 0.1f, b + 0.1f));
+				ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImColor(r + 0.2f, g + 0.2f, b + 0.2f));
+				if (ImGui::Button("  "))
+				{
+					*col = ImVec4(r, g, b, 1.0f);					
+					bEnd = true;
+					CloseCurrentPopup();
+				}
+				ImGui::PopStyleColor(3);
+				ImGui::PopID();			
+			}			
+		}
+		ImGui::EndPopup();
+	}	
+	return bEnd;
+}
 
 // Small buttons fits within text without additional vertical spacing.
 bool ImGui::SmallButton(const char* label)
@@ -8496,8 +8562,8 @@ bool ImGui::ColorButton(const ImVec4& col, bool small_height, bool outline_borde
     bool pressed = ButtonBehavior(bb, id, &hovered, &held);
     RenderFrame(bb.Min, bb.Max, GetColorU32(col), outline_border, style.FrameRounding);
 
-    if (hovered)
-        ImGui::SetTooltip("Color:\n(%.2f,%.2f,%.2f,%.2f)\n#%02X%02X%02X%02X", col.x, col.y, col.z, col.w, IM_F32_TO_INT8(col.x), IM_F32_TO_INT8(col.y), IM_F32_TO_INT8(col.z), IM_F32_TO_INT8(col.z));
+	if (hovered)
+       ImGui::SetTooltip("Color:\n(%.2f,%.2f,%.2f,%.2f)\n#%02X%02X%02X%02X", col.x, col.y, col.z, col.w, IM_F32_TO_INT8(col.x), IM_F32_TO_INT8(col.y), IM_F32_TO_INT8(col.z), IM_F32_TO_INT8(col.z));
 
     return pressed;
 }

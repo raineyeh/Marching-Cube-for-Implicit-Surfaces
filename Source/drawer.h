@@ -1,5 +1,7 @@
-#include "marching.h"
+#ifndef DRAW_H
+#define DRAW_H
 
+#include "marching.h"
 #include <string>
 #include <objbase.h>
 class Drawer{
@@ -18,3 +20,6 @@ private:
 	Marching* m_pMmarching;
 	Evaluator* m_pEvaluator;		
 };
+
+
+#endif
