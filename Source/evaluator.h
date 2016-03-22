@@ -37,7 +37,7 @@ private:
 	}
 	bool is_number(char ch)
 	{
-		return  (ch >= '0' && ch <= '9');
+		return  (ch >= '0' && ch <= '9') || ch == '.';
 	}
 	bool is_variable(char ch) { return  ((ch >= 'a') && (ch <= 'z')) || ((ch >= 'A') && (ch <= 'Z')); }
 	int operator_precedence(char ch);

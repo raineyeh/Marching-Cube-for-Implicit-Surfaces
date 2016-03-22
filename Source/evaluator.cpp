@@ -208,7 +208,7 @@ void Evaluator::tokenizer()
 	//the equation for the checking of marching cubes 
 	// the result of the tokenization based on finding the operation 
 	int curr1 = 0;       //index to keep track of last split 
-	cout << equation << endl;
+	//cout << equation << endl;
 	int i;
 	if (equation[0] == '-')  i = 1; else i = 0;
 	for (; i<equation.size(); i++)        //we trace the equation character by character 
@@ -221,7 +221,7 @@ void Evaluator::tokenizer()
 	 }
 	 if (i>0 && isoperator(equation[i]) && (!is_neg(equation[i], equation[i - 1])))      //if the char is an operator but not a negative sign (this is to differntiate minus from negative )
 		{
-			cout << i << " " << isoperator(equation[i]) << endl;
+			//cout << i << " " << isoperator(equation[i]) << endl;
 
 			if (equation.substr(curr1, i - curr1) != "")
 			{
