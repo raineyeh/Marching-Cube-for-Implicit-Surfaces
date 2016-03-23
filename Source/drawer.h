@@ -7,8 +7,11 @@
 class Drawer{
 public:
 	Drawer(int*, char**);
-	bool set_march(Marching*);
-	void set_evaluator(Evaluator*);
+	bool SetMarch(Marching*);
+	void SetEvaluator(Evaluator*);
+	void SetSurfaceConstant(float);
+	void SetSurfaceRepeatStepDistance(float);
+	void SetRepeatingSurfaceMode(bool);
 	bool GetPolyData();
 	void Recalculate();
 	void start();

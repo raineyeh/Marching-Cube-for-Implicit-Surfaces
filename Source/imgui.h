@@ -1,16 +1,28 @@
-// dear imgui, v1.48 WIP
-// (headers)
-
-// See imgui.cpp file for documentation.
-// See ImGui::ShowTestWindow() in imgui_demo.cpp for demo code.
-// Read 'Programmer guide' in imgui.cpp for notes on how to setup ImGui in your codebase.
-// Get latest version at https://github.com/ocornut/imgui
-
+// dear imgui, v1.48
 #pragma once
+#   ifdef SHADERLIB_STATIC
+#       define IMGUI_API
+#       define IMGUIAPIENTRY
 
-#if !defined(IMGUI_DISABLE_INCLUDE_IMCONFIG_H) || defined(IMGUI_INCLUDE_IMCONFIG_H)
-#include "imconfig.h"       // User-editable configuration file
-#endif
+/* Link with Win32 static lib */
+#       if IMGUIAPI_LIB_PRAGMAS
+#           pragma comment (lib, "imgui_static.lib")
+#       endif
+
+/* Windows shared library (DLL) */
+#   else
+#       define IMGUIAPIENTRY __stdcall
+#       if defined(IMGUIAPI_EXPORTS)
+#           define IMGUI_API __declspec(dllexport)
+#       else
+#           define IMGUI_API __declspec(dllimport)
+#           pragma comment (lib, "imgui.lib")
+#       endif
+#   endif
+
+// #if !defined(IMGUI_DISABLE_INCLUDE_IMCONFIG_H) || defined(IMGUI_INCLUDE_IMCONFIG_H)
+// #include "imconfig.h"       // User-editable configuration file
+// #endif
 #include <float.h>          // FLT_MAX
 #include <stdarg.h>         // va_list
 #include <stddef.h>         // ptrdiff_t, NULL
@@ -19,9 +31,7 @@
 #define IMGUI_VERSION       "1.48 WIP"
 
 // Define attributes of all API symbols declarations, e.g. for DLL under Windows.
-#ifndef IMGUI_API
-#define IMGUI_API
-#endif
+
 
 // Define assertion handler.
 #ifndef IM_ASSERT
@@ -104,7 +114,7 @@ namespace ImGui
     IMGUI_API ImGuiIO&      GetIO();
     IMGUI_API ImGuiStyle&   GetStyle();
     IMGUI_API ImDrawData*   GetDrawData();                              // same value as passed to your RenderDrawListsFn() function. valid after Render() and until the next call to NewFrame()
-	IMGUI_API void          NewFrame(const char* ch);
+	IMGUI_API void          NewFrame(const char* title, float fInputBarWidth = 0.65f);
     IMGUI_API void          Render();
     IMGUI_API void          Shutdown();
     IMGUI_API void          ShowUserGuide();                            // help block
@@ -113,8 +123,8 @@ namespace ImGui
     IMGUI_API void          ShowMetricsWindow(bool* opened = NULL);     // metrics window for debugging imgui
 
     // Window
-    IMGUI_API bool          Begin(const char* name, bool* p_opened = NULL, ImGuiWindowFlags flags = 0);                                                   // see .cpp for details. return false when window is collapsed, so you can early out in your code. 'bool* p_opened' creates a widget on the upper-right to close the window (which sets your bool to false).
-    IMGUI_API bool          Begin(const char* name, bool* p_opened, const ImVec2& size_on_first_use, float bg_alpha = -1.0f, ImGuiWindowFlags flags = 0); // this is the older/longer API. the extra parameters aren't very relevant. call SetNextWindowSize() instead if you want to set a window size. For regular windows, 'size_on_first_use' only applies to the first time EVER the window is created and probably not what you want! maybe obsolete this API eventually.
+	IMGUI_API bool          Begin(const char* name, float fInputBarWidth, bool* p_opened = NULL, ImGuiWindowFlags flags = 0);                                                   // see .cpp for details. return false when window is collapsed, so you can early out in your code. 'bool* p_opened' creates a widget on the upper-right to close the window (which sets your bool to false).
+	IMGUI_API bool          Begin(const char* name, float fInputBarWidth, bool* p_opened, const ImVec2& size_on_first_use, float bg_alpha = -1.0f, ImGuiWindowFlags flags = 0); // this is the older/longer API. the extra parameters aren't very relevant. call SetNextWindowSize() instead if you want to set a window size. For regular windows, 'size_on_first_use' only applies to the first time EVER the window is created and probably not what you want! maybe obsolete this API eventually.
     IMGUI_API void          End();
     IMGUI_API bool          BeginChild(const char* str_id, const ImVec2& size = ImVec2(0,0), bool border = false, ImGuiWindowFlags extra_flags = 0);  // begin a scrolling region. size==0.0f: use remaining window size, size<0.0f: use remaining window size minus abs(size). size>0.0f: fixed size. each axis can use a different mode, e.g. ImVec2(0,400).
     IMGUI_API bool          BeginChild(ImGuiID id, const ImVec2& size = ImVec2(0,0), bool border = false, ImGuiWindowFlags extra_flags = 0);          // "
@@ -242,8 +252,7 @@ namespace ImGui
     IMGUI_API void          Bullet();
     IMGUI_API void          BulletText(const char* fmt, ...) IM_PRINTFARGS(1);
     IMGUI_API void          BulletTextV(const char* fmt, va_list args);
-    IMGUI_API bool          Button(const char* label, const ImVec2& size = ImVec2(0,0));
-	IMGUI_API bool          ColorPlate(ImVec4* col, const char* label);
+    IMGUI_API bool          Button(const char* label, const ImVec2& size = ImVec2(0,0));	
     IMGUI_API bool          SmallButton(const char* label);
     IMGUI_API bool          InvisibleButton(const char* str_id, const ImVec2& size);
     IMGUI_API void          Image(ImTextureID user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0,0), const ImVec2& uv1 = ImVec2(1,1), const ImVec4& tint_col = ImVec4(1,1,1,1), const ImVec4& border_col = ImVec4(0,0,0,0));
@@ -260,7 +269,8 @@ namespace ImGui
     IMGUI_API bool          ColorEdit3(const char* label, float col[3]);
     IMGUI_API bool          ColorEdit4(const char* label, float col[4], bool show_alpha = true);
     IMGUI_API void          ColorEditMode(ImGuiColorEditMode mode);                                 // FIXME-OBSOLETE: This is inconsistent with most of the API and should be obsoleted.
-    IMGUI_API void          PlotLines(const char* label, const float* values, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0), int stride = sizeof(float));
+	IMGUI_API bool          ColorPlate(ImVec4* col, const char* label);
+	IMGUI_API void          PlotLines(const char* label, const float* values, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0), int stride = sizeof(float));
     IMGUI_API void          PlotLines(const char* label, float (*values_getter)(void* data, int idx), void* data, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0));
     IMGUI_API void          PlotHistogram(const char* label, const float* values, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0), int stride = sizeof(float));
     IMGUI_API void          PlotHistogram(const char* label, float (*values_getter)(void* data, int idx), void* data, int values_count, int values_offset = 0, const char* overlay_text = NULL, float scale_min = FLT_MAX, float scale_max = FLT_MAX, ImVec2 graph_size = ImVec2(0,0));

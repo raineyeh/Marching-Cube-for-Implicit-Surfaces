@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	Marching march_maker;
 	march_maker.set_evaluator(&evaluator);
 	Drawer drawer(&argc, argv);	
-	drawer.set_march(&march_maker);
-	drawer.set_evaluator(&evaluator);
+	drawer.SetMarch(&march_maker);
+	drawer.SetEvaluator(&evaluator);
 	drawer.start();		
 }
