@@ -3,12 +3,33 @@
 // If you use this binding you'll need to call 4 functions: ImGui_ImplXXXX_Init(), ImGui_ImplXXXX_NewFrame(), ImGui::Render() and ImGui_ImplXXXX_Shutdown().
 // If you are new to ImGui, see examples/README.txt and documentation at the top of imgui.cpp.
 // https://github.com/ocornut/imgui
+#pragma once
 
-#include <imgui/imgui.h>
+#   ifdef SHADERLIB_STATIC 
+#       define IMGUI_API
+#       define IMGUIAPIENTRY  
+
+/* Link with Win32 static lib */
+#       if IMGUIAPI_LIB_PRAGMAS
+#           pragma comment (lib, "imgui_static.lib")
+#       endif
+
+/* Windows shared library (DLL) */
+#   else
+#       define IMGUIAPIENTRY __stdcall
+#       if defined(IMGUIAPI_EXPORTS)
+#           define IMGUI_API __declspec(dllexport)
+#       else
+#           define IMGUI_API __declspec(dllimport)
+#           pragma comment (lib, "imgui.lib")
+#       endif
+#   endif
+
+#include "imgui.h"
 
 IMGUI_API bool        ImGui_ImplGlut_Init();
 IMGUI_API void        ImGui_ImplGlut_Shutdown();
-IMGUI_API void        ImGui_ImplGlut_NewFrame(const char* ch);
+IMGUI_API void        ImGui_ImplGlut_NewFrame(const char* ch, float fInputBarWidth);
 
 // Use if you want to reset your rendering device without losing ImGui state.
 IMGUI_API void        ImGui_ImplGlut_InvalidateDeviceObjects();

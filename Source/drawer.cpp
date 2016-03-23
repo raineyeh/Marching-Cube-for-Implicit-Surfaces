@@ -1,6 +1,6 @@
 #define GLM_FORCE_RADIANS
 #include "drawer.h"
-#include "imgui/imgui_impl_glut.h" 
+#include "imgui_impl_glut.h" 
 #include <algorithm>
 #include <memory> 
 #include <process.h> 
@@ -19,9 +19,9 @@
 using namespace std;
 
 /* Window information */
-float nWindowWidth = 1050;
 float nWindowHeight = 700;
-float nBarWidth = 350;
+float nBarWidth = 380;
+float nWindowWidth = nWindowHeight + nBarWidth;
 int windowID = -1;
 float nColor = 48;
 /* Data information */
@@ -30,15 +30,18 @@ static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char szInput[256] = "x+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
 static float fGrid = 0.25f;
-static float fInterval = 0.2f;
+static float fSurfaceConstant = 0.2f;
+static float fStepDistance = 0.5f;
 static float fPercent;
-static bool bStepMode, bTranslucent, bInvertFace;
-static ImVec4 cBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
-static ImVec4 cModel = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
-static ImVec4 cEdge = ImColor(1.0f, 0.0f, 1.0f, 1.0f);
-static ImVec4 cIntersectPointr = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
-static ImVec4 cInCornerPointr = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
-static ImVec4 cOutCornerPointr = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
+static bool bStepMode, bTranslucent, bInvertFace, bRepeating;
+static ImVec4 colBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
+static ImVec4 colModelSurface = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
+static ImVec4 colCubeSurface = ImColor(0.0f, 0.0f, 1.0f, 0.5f);
+static ImVec4 colCubeEdge = ImColor(1.0f, 0.0f, 1.0f, 1.0f);
+static ImVec4 colModelEdge = ImColor(0.0f, 0.0f,0.0f, 1.0f);
+static ImVec4 colIntersectPoint = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
+static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
+static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
 bool bPressed,bHasInit, bMovie, bPause;
 int nLastX = 0, nLastY = 0, nCurX = 0, nCurY = 0;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
@@ -104,21 +107,33 @@ static int Movie(void*)
 }
 void DrawGUI()
 {	
-	ImGui_ImplGlut_NewFrame("Marching Cube");
+	ImGui_ImplGlut_NewFrame("Marching Cube",0.96f);
 	ImVec2 wsize(nBarWidth, nWindowHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
 	ImVec2 wpos(nWindowWidth - nBarWidth, 0);
 	ImGui::SetWindowPos(wpos);
-	if (!bMovie)
-		ImGui::InputText("Polynomial", szInput, 256, 0);
-	if (!bMovie && ImGui::SliderFloat("Grid size", &fGrid, 0.1f, 0.5f)){
-		if (pDrawer)
+	if (!bMovie){
+		ImGui::InputText("1", szInput, 256, 0);
+		ImGui::Text("			Polynomial");		
+	}		
+	if (!bMovie && ImGui::SliderFloat("2", &fGrid, 0.1f, 0.5f, "Grid size: %.2f")){
+		if (pDrawer) {
 			pDrawer->SetGridSize(fGrid);
+			pDrawer->ResetStep();
+		}			
 	}
-	if (!bMovie && ImGui::SliderFloat("Level set", &fInterval, 0.1f, 0.5f)){
-		if (pDrawer)
-			pDrawer->SetGridSize(fGrid);
+	if (!bMovie && ImGui::SliderFloat("3", &fSurfaceConstant, 0.1f, 1.0f, "Surface constant: %.2f")){
+		if (pDrawer){
+			pDrawer->SetSurfaceConstant(fSurfaceConstant);
+			pDrawer->ResetStep();
+		}			
+	}
+	if (!bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f,"Surface repeat step distance:%.2f")){
+		if (pDrawer){
+			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
+			pDrawer->ResetStep();
+		}
 	}
 	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
 		pDrawer->SetEquation(string(szInput));
@@ -171,14 +186,20 @@ void DrawGUI()
 	}	
 	if (ImGui::Button("Save mesh")){
 		myfile.Save(pData);
+		if (pDrawer)pDrawer->ResetStep();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
 		myfile.Open();
+		if (pDrawer)pDrawer->ResetStep();
 	}
-	if (!bMovie && ImGui::Checkbox("Step Mode", &bStepMode)){
-		if (pDrawer)
+	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
+		for (int i = 0; i < 3; i++)
+			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
+		if (pDrawer){
+			pDrawer->ResetStep();
 			pDrawer->SetStepMode(bStepMode);
+		}			
 	}
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent)
@@ -187,25 +208,33 @@ void DrawGUI()
 			glEnable(GL_DEPTH_TEST);	
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
-	if (ImGui::Checkbox("Invert Face", &bInvertFace)){	
+	if (ImGui::Checkbox("Invert face", &bInvertFace)){	
 		if (bInvertFace)
 			glFrontFace(GL_CW);
 		else
 			glFrontFace(GL_CCW);		
 	}
+	if (ImGui::Checkbox("Repeating surface mode", &bRepeating)){
+		if (pDrawer){
+			pDrawer->SetRepeatingSurfaceMode(bRepeating);
+			pDrawer->ResetStep();
+		}			
+	}
+	
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
-	}	
-	ImGui::Text("Background color");  ImGui::SameLine();
-	if (ImGui::ColorPlate(&cBackground,"Background color")){
-		glClearColor(cBackground.x, cBackground.y, cBackground.z, 1.0f);
-	}	
-	ImGui::Text("Model color"); ImGui::SameLine();	 	
-	ImGui::ColorPlate(&cModel, "Model color");
-	ImGui::Text("Edge color"); ImGui::SameLine();
-	ImGui::ColorPlate(&cEdge, "Edge color");
-
+	}		  
+	if (ImGui::ColorPlate(&colBackground,"Background color")){
+		glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
+	}
+	ImGui::ColorPlate(&colModelSurface, "Model color"); 	
+	ImGui::ColorPlate(&colCubeEdge, "Cube edge color");
+	ImGui::ColorPlate(&colModelEdge, "Model edge color"); 
+	ImGui::ColorPlate(&colInCornerPoint, "Inside point color"); 
+	ImGui::ColorPlate(&colOutCornerPoint, "Outside point color"); 
+	ImGui::ColorPlate(&colIntersectPoint, "Intersect point color"); 
+	
 	char ch[20] = {0};
 	if (pData && bStepMode && pData->step_data.step_i>=0)
 		sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
@@ -256,32 +285,30 @@ void DrawCube(){
 	//cube	
 	glDepthMask(false);
 	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
-	glm::vec4 color = glm::vec4(0.0f, 0.0f, 1.0f, 0.2f);	
-	ModelShader.setUniform("ucolor", color);
+	ModelShader.setUniform("ucolor", glm::vec4(colCubeSurface.x, colCubeSurface.y, colCubeSurface.z, 0.5f));
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	glDepthMask(false);
 	
 	//edge
-	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
-	color = glm::vec4(cEdge.x, cEdge.y, cEdge.z,1.0f);
-	ModelShader.setUniform("ucolor", color);
+	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);	
+	ModelShader.setUniform("ucolor", glm::vec4(colCubeEdge.x, colCubeEdge.y, colCubeEdge.z, 1.0f));
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_LINE_STRIP, 30, GL_UNSIGNED_INT, 0);
 	
 	//corner	
 	int n = 0;
 	for (auto p : pData->step_data.corner_values){
-		color = p < 0 ? glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) : glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		glm::vec4 color = p < 0 ? glm::vec4(colInCornerPoint.x, colInCornerPoint.y, colInCornerPoint.z, 1.0f) 
+			: glm::vec4(colOutCornerPoint.x, colOutCornerPoint.y, colOutCornerPoint.z, 1.0f);
 		ModelShader.setUniform("ucolor", color);
 		glDrawArrays(GL_POINTS, n++, 1);		
 	}	
 
 	//intersect	
 	glBindVertexArray(vao[2]);
-	color = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-	ModelShader.setUniform("ucolor",color);
+	ModelShader.setUniform("ucolor", glm::vec4(colIntersectPoint.x, colIntersectPoint.y, colIntersectPoint.z, 1.0f));
 	glDrawArrays(GL_POINTS, 0, pData->step_data.intersect_coord.size()/3);
 		
 	glBindVertexArray(0);	
@@ -289,25 +316,25 @@ void DrawCube(){
 void DrawModel(){		
 	if (pData == nullptr) return;
 	
-	glBindVertexArray(vao[0]);
-	glm::vec4 color = glm::vec4(cModel.x, cModel.y, cModel.z, bTranslucent ? 0.5f : 1.0f);
-	ModelShader.setUniform("ucolor", color);
+	glBindVertexArray(vao[0]); 	
+	ModelShader.setUniform("ucolor", glm::vec4(colModelSurface.x, colModelSurface.y, colModelSurface.z, bTranslucent ? 0.5f : 1.0f));
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	color = glm::vec4(1.0f, 1.0f, 1.0f, 0.5f);
-	ModelShader.setUniform("ucolor", color);
+	glLineWidth(3);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	
+	ModelShader.setUniform("ucolor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glLineWidth(1);
 }
 
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 	Arcball();
-	DrawCube();
 	DrawModel();
+	DrawCube();	
 	DrawGUI();	
 	glutSwapBuffers();
 }
@@ -434,12 +461,12 @@ Drawer::Drawer(int* argc, char** argv){
 	glutIdleFunc(idle);	
 	InitMatrix();
 	InitBuffer();
-	glClearColor(cBackground.x, cBackground.y, cBackground.z, 1.0f);
+	glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
 	m_pEvaluator = nullptr;
 	m_pMmarching = nullptr;			
 }
 
-bool Drawer::set_march(Marching* m){
+bool Drawer::SetMarch(Marching* m){
 	m_pMmarching = m;
 	return true;
 }
@@ -487,6 +514,25 @@ void Drawer::ResetStep(){
 		m_pMmarching->reset_step();
 }
 
-void Drawer::set_evaluator(Evaluator* e){
+void Drawer::SetEvaluator(Evaluator* e){
 	m_pEvaluator = e;
 }
+
+void Drawer::SetSurfaceConstant(float fConstant)
+{
+	if (m_pMmarching)
+		m_pMmarching->set_surface_constant(fConstant);
+}
+
+void Drawer::SetSurfaceRepeatStepDistance(float fDistance)
+{
+	if (m_pMmarching)
+		m_pMmarching->set_surface_repeat_step_distance(fDistance);
+}
+
+void Drawer::SetRepeatingSurfaceMode(bool bRepeat)
+{
+	if (m_pMmarching)
+		m_pMmarching->repeating_surface_mode(bRepeat);
+}
+
