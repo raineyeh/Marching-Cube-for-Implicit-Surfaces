@@ -404,7 +404,7 @@ void CompileAndLinkShader(){
 		ModelShader.compileShader(vertex_shader.c_str(), GLSLShader::VERTEX);
 		ModelShader.compileShader(fragment_shader.c_str(), GLSLShader::FRAGMENT);
 		ModelShader.link();
-	//	ModelShader.use();	
+		ModelShader.use();	
 	}
 	catch (ShaderLibException & e) {
 		cerr << e.what() << endl;
