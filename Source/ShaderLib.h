@@ -1,5 +1,7 @@
 #ifndef SHADERLIB_H
 #define SHADERLIB_H
+
+
 /* Windows static library */
 #   ifdef SHADERLIB_STATIC
 
@@ -13,6 +15,7 @@
 
 /* Windows shared library (DLL) */
 #   else
+
 #       define SLAPIENTRY __stdcall
 #       if defined(SHADERLIB_EXPORTS)
 #           define SLAPI __declspec(dllexport)
@@ -55,11 +58,12 @@ namespace GLSLShader {
     COMPUTE = GL_COMPUTE_SHADER
   };
 };
+
 template class SLAPI std::map<string, int>;
 class SLAPI ShaderLib
 {
   private:
-    int  handle;
+    int  program;
     bool linked;
 	
 	std::map<string, int> uniformLocations;
@@ -85,7 +89,7 @@ class SLAPI ShaderLib
     void   validate() throw(ShaderLibException);
     void   use() throw (ShaderLibException);
 
-    int    getHandle();
+    int    getProgram();
     bool   isLinked();
 
     void   bindAttribLocation( GLuint location, const char * name);

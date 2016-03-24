@@ -28,7 +28,7 @@ float nColor = 48;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char szInput[256] = "x+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
+static char szInput[256] = "(y-0.1)^2-(z*z+2*x)^2+0.1";//x^2+y^2-0.5 
 static float fGrid = 0.25f;
 static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
@@ -57,16 +57,12 @@ unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
 
 void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){	
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);
+	glNamedBufferData(ibo, ni, pi, GL_DYNAMIC_DRAW);
 }
 void SetStepData(){
 	if (pData == nullptr) return;
-
+	
 	//model
 	if (!pData->tri_list.empty() && !pData->vertex_list.empty()){
 		BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
@@ -190,7 +186,7 @@ void DrawGUI()
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
-		myfile.Open();
+		Poly_Data data = myfile.Open();
 		if (pDrawer)pDrawer->ResetStep();
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
@@ -289,7 +285,7 @@ void DrawCube(){
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
-	glDepthMask(false);
+	glDepthMask(true);
 	
 	//edge
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);	
@@ -309,14 +305,13 @@ void DrawCube(){
 	//intersect	
 	glBindVertexArray(vao[2]);
 	ModelShader.setUniform("ucolor", glm::vec4(colIntersectPoint.x, colIntersectPoint.y, colIntersectPoint.z, 1.0f));
-	glDrawArrays(GL_POINTS, 0, pData->step_data.intersect_coord.size()/3);
-		
+	glDrawArrays(GL_POINTS, 0, pData->step_data.intersect_coord.size()/3);		
 	glBindVertexArray(0);	
 }
 void DrawModel(){		
 	if (pData == nullptr) return;
 	
-	glBindVertexArray(vao[0]); 	
+	glBindVertexArray(vao[0]); 		
 	ModelShader.setUniform("ucolor", glm::vec4(colModelSurface.x, colModelSurface.y, colModelSurface.z, bTranslucent ? 0.5f : 1.0f));
 	glDrawElements(GL_TRIANGLES, pData->vertex_list.size(), GL_UNSIGNED_INT, 0);
 
@@ -402,14 +397,14 @@ void reshape(int w, int h){
 	glViewport(0, 0, w - nBarWidth, h);
 	nWindowWidth = w;
 	nWindowHeight = h;
-}
+} 
 
 void CompileAndLinkShader(){
 	try {
 		ModelShader.compileShader(vertex_shader.c_str(), GLSLShader::VERTEX);
 		ModelShader.compileShader(fragment_shader.c_str(), GLSLShader::FRAGMENT);
 		ModelShader.link();
-		ModelShader.use();
+	//	ModelShader.use();	
 	}
 	catch (ShaderLibException & e) {
 		cerr << e.what() << endl;
@@ -424,7 +419,7 @@ void InitMatrix(){
 }
 void InitBuffer(){	
 	for (int i = 0; i < 3;i++){
-		CreateBuffer(ModelShader.getHandle(),vao[i],vbo[i],ibo[i]);
+		CreateBuffer(ModelShader.getProgram(),vao[i],vbo[i],ibo[i]);
 	}	
 }
 Drawer::Drawer(int* argc, char** argv){

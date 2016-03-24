@@ -7,7 +7,7 @@ MyFile::~MyFile()
 {
 }
 
-vector<int> MyFile::Open()
+Poly_Data MyFile::Open()
 {
 	vector<int> vPoint;	
 	FILE *fp;
@@ -36,9 +36,12 @@ vector<int> MyFile::Open()
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
 
-	if (GetOpenFileName(&ofn) == false) return vPoint;
+	Poly_Data data;
+	data.vertex_list.push_back(0.1f);
+	return data;
+	if (GetOpenFileName(&ofn) == false) return data;
 	errno_t err = fopen_s(&fp, szFilter, "r");
-	if (NULL == fp) return vPoint;
+	if (NULL == fp) return data;
 
 	int num = 0;
 	float x = 0, y = 0;
@@ -50,7 +53,7 @@ vector<int> MyFile::Open()
 		fscanf_s(fp, "%f", &y);		
 	}
  	fclose(fp);
-	return vPoint;
+	return data;
 }
 
 bool MyFile::Save(const Poly_Data* data)
