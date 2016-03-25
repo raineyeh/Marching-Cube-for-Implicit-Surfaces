@@ -13,11 +13,9 @@ MyFile::~MyFile()
 }
 
 
- Poly_Data*  MyFile::Open()
+  bool MyFile::Open(Poly_Data* data)
 
-
-{
-	Poly_Data* data =NULL;
+{	
 	FILE *fp;
 	OPENFILENAME ofn;
 	TCHAR	szFile[MAX_PATH] = "mesh.poly";
@@ -46,31 +44,24 @@ MyFile::~MyFile()
 	if (GetOpenFileName(&ofn) == false) return NULL;// ask gordon
 	errno_t err = fopen_s(&fp, szFilter, "r");
 	if (NULL == fp) return  NULL; //ask gordon
-	int num = 0; int tri_num = 0;
+	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;
-	fscanf_s(fp, "%d", &num);	                      
-	for (int i = 0; i <num; i++)
+	fscanf_s(fp, "%d", &num_of_points);
+	for (int i = 0; i <num_of_points; i++)
 	{
-		fscanf_s(fp, "%f", &x);
-		fscanf_s(fp, "%f", &y);		
-		fscanf_s(fp, "%f", &z);
+		fscanf_s(fp, "%f %f %f", &x,&y,&z);
 		data->vertex_list.push_back(x);
 		data->vertex_list.push_back(y);
 		data->vertex_list.push_back(z);
 	}
 	unsigned int x0, y0, z0;
-	fscanf_s(fp, "%d", &tri_num);
-	for (int i = 0; i <tri_num; i++)
+	fscanf_s(fp, "%d", &num_of_triangles);
+	for (int i = 0; i <num_of_triangles; i++)
 	{
-		for (int j = 1; j <= 3; j++)
-		{
-		fscanf_s(fp, "%u", &x0);
-		fscanf_s(fp, "%u", &y0);
-		fscanf_s(fp, "%u", &z0);
-		data->tri_list.push_back(x);
-		data->tri_list.push_back(y);
-		data->tri_list.push_back(z);
-		}
+		fscanf_s(fp, "%u %u %u", &x0,&y0,&z0);
+		data->tri_list.push_back(x0);
+		data->tri_list.push_back(y0);
+		data->tri_list.push_back(z0);
 	}
  	fclose(fp);
 	return data;
@@ -103,44 +94,39 @@ bool MyFile::Save(const Poly_Data* data)
 	ofn.lCustData = 0L;
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
+	if (data == NULL || data->vertex_list.empty()) return false; 
 	if (GetOpenFileName(&ofn) == false) return false;
 	errno_t err = fopen_s(&fp, ofn.lpstrFile, "w");
 	if (NULL == fp) return false;
-	int num = 0; int tri_num = 0;
+	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;
-	num = ((data->vertex_list.size()) / 3);
-	cout << num;
+	num_of_points = ((data->vertex_list.size()) / 3);
+	cout << num_of_points;
 	char buffer[50];
-	sprintf_s(buffer, "%d", num);
+	sprintf_s(buffer, "%d", num_of_points);
 	fprintf_s(fp, "%s", buffer);
-	fprintf_s(fp, "\r\n");
-		for (int i = 0; i <num; i++)
-		{
-		x=data->vertex_list.at(i*3);
-		y=data->vertex_list.at(i*3+1);
-		z=data->vertex_list.at(i*3+2);
-		sprintf_s(buffer, "%f %f %f ", x,y,z);
+	fprintf_s(fp, "\n");
+	for (int i = 0; i < num_of_points; i++)
+	{	x = data->vertex_list[i * 3];
+		y = data->vertex_list[i * 3 + 1];
+		z = data->vertex_list[i * 3 + 2];
+		sprintf_s(buffer, "%f %f %f\n", x,y,z);
 		fprintf_s(fp, "%s", buffer);
-		fprintf_s(fp, "\r\n");
-		}
-		tri_num = ((data->tri_list.size()) / 3);
-	unsigned int x0=0, y0=0, z0=0;
-	sprintf_s(buffer, "%d", tri_num);
-	fprintf_s(fp, "%s", buffer);
-	fprintf_s(fp, "\r\n");
-	for (int i = 0; i <tri_num; i++)
-	{
-		for (int j = 1; j <= 3; j++)
-		{
-			x0 = data->tri_list.at(i * 3);
-			y0 = data->tri_list.at(i * 3 + 1);
-			z0 = data->tri_list.at(i * 3 + 2);
-			sprintf_s(buffer, "%f %f %f ", x, y, z);
-			fprintf_s(fp, "%s", buffer);
-			fprintf_s(fp, "\r\n");
-		}
 	}
-	
+	num_of_triangles = ((data->tri_list.size()) / 3);
+	unsigned int x0=0, y0=0, z0=0;
+	sprintf_s(buffer, "%d", num_of_triangles);
+	fprintf_s(fp, "%s", buffer);
+	fprintf_s(fp, "\n");
+	for (int i = 0; i < num_of_triangles; i++)
+	{
+		x0 = data->tri_list.at(i * 3);
+		y0 = data->tri_list.at(i * 3 + 1);
+		z0 = data->tri_list.at(i * 3 + 2);
+		sprintf_s(buffer, "%u %u %u\n", x0, y0, z0);
+		fprintf_s(fp, "%s", buffer);
+				
+	}
 	fclose(fp);
 	return true;
 }
