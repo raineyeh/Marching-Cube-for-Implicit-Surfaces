@@ -12,7 +12,10 @@ MyFile::~MyFile()
 {
 }
 
+
  Poly_Data*  MyFile::Open()
+
+
 {
 	Poly_Data* data =NULL;
 	FILE *fp;
@@ -40,7 +43,6 @@ MyFile::~MyFile()
 	ofn.lCustData = 0L;
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
-
 	if (GetOpenFileName(&ofn) == false) return NULL;// ask gordon
 	errno_t err = fopen_s(&fp, szFilter, "r");
 	if (NULL == fp) return  NULL; //ask gordon

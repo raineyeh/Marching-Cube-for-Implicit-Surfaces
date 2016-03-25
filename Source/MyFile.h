@@ -10,8 +10,9 @@ class MyFile
 public:
 	MyFile();
 	~MyFile();
+
 	Poly_Data*  Open();
-	bool Save(const Poly_Data*);
+    bool Save(const Poly_Data*);
 
 private:
 	
