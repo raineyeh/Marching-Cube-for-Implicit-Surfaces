@@ -10,7 +10,7 @@ class MyFile
 public:
 	MyFile();
 	~MyFile();
-	vector<int> Open();
+	Poly_Data*  Open();
 	bool Save(const Poly_Data*);
 
 private:
