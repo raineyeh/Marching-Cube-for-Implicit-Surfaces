@@ -18,43 +18,7 @@ struct Step_Data{
 	float surf_constant; //value of the surface. marching cube corner is considered positive if corner_values[i] > surf_constant
 
 };
-struct vertex_list
-{
-	float x0, x1, y0,  y1, z0, z1;
-	bool operator<(const vertex_list&rhs) const {
-		if (x0 == rhs.x0) 
-		{
-			if (y0 == rhs.y0)
-			{
-				return z0 < rhs.z0;
-			}
-			else
-				return y0 < rhs.y0;
-		}
-		else
-			return x0 < rhs.x0;
-	   }
-	bool operator>(const vertex_list&rhs) const {
-		if (x0 == rhs.x0)
-		{
-			if (y0 == rhs.y0)
-			{
-				return z0 > rhs.z0;
-			}
-			else
-				return y0 > rhs.y0;
-		}
-		else
-			return x0 > rhs.x0;
-	}
-	bool operator==(const vertex_list&rhs) const {
-		if ((x0 == rhs.x0) && (y0 == rhs.y0 )&& (z0 == rhs.z0))
-			return true;
-		else
-			return false;
-		
-	}
-};
+
 
 struct Poly_Data{
 	std::vector<float> vertex_list; //xyz coords
@@ -64,6 +28,7 @@ struct Poly_Data{
 
 struct xyz{
 	float x, y, z; int idx;
+	xyz(){ x = y = z = NAN; idx = -1; };
 	xyz(float xt, float yt, float zt, int i){ x = xt; y = yt; z = zt; idx = i; };
 	xyz(float xt, float yt, float zt){ x = xt; y = yt; z = zt; idx = -1; };
 	bool operator<(const xyz& rhs) const{
@@ -87,10 +52,10 @@ public:
     void seed_mode(bool);//this to set the seed mode to true or false 
 	bool set_seed(float x, float y, float z);   //reading the seeed from the UI and checking 
 	void get_seed_grid();  //to find where is the starting grid for the seed point 
+
 private:
-			
 	float evaluate(float x, float y, float z);
-	void do_square(float, float, float, float, float, float);
+	void do_square(float, float, float);
 	int add_triangle(int, int, int);
 	int add_point(float, float, float);
 	void add_step_to_poly_data();
@@ -110,10 +75,9 @@ private:
 
 	bool is_seed_mode;
 	float seed[3] ;
-	vertex_list seed_grid;
-	bool cubes[26];
-	queue <vertex_list> seed_queue; 
-	set<vertex_list> my_seed_set;
+	xyz seed_grid;
+	queue <xyz> seed_queue;
+	set<xyz> my_seed_set;
 };
 
 #endif

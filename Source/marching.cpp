@@ -30,11 +30,12 @@ Marching::Marching(void){
 	this->surface_step = 0;
 	this->is_seed_mode = false;
 	seed[0] = 0; seed[1] = 0; seed[2] = 0;
-	for (int i = 0; i < 26; i++)  cubes[i] = false;
 }
 
 void Marching::find_cubes_for_seeding()
 {
+	bool cubes[26];
+
 	//cout << "another find cube call " << endl;
 	if (!(this->poly_data.step_data.edge_list.empty()))
 	{
@@ -74,98 +75,112 @@ void Marching::find_cubes_for_seeding()
 
 
 		}//end of for 
-		vertex_list v1;  int list_size=1; set<vertex_list>::iterator it;
+		xyz v1;  
+		//int list_size = 1;
+		set<xyz>::iterator seed_set_iter;
 		for (int i = 0; i < 26; i++)
 		{
 			if (cubes[i])
 				switch (i)
 				{
 				case 0:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 1:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 2:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 3:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 4:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 5:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 6:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 7:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 8:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 - grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z - grid_step_size;
 					break;
 				case 9:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 10:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 11:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 12:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 13:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 14:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 15:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 16:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 17:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0 + grid_step_size;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z + grid_step_size;
 					break;
 				case 18:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 19:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 20:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0 - grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y - grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 21:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 22:
-					v1.x0 = seed_grid.x0; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 23:
-					v1.x0 = seed_grid.x0+grid_step_size; v1.y0 = seed_grid.y0 + grid_step_size; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x+grid_step_size; v1.y = seed_grid.y + grid_step_size; v1.z = seed_grid.z;
 					break;
 				case 24:
-					v1.x0 = seed_grid.x0 - grid_step_size; v1.y0 = seed_grid.y0 ; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x - grid_step_size; v1.y = seed_grid.y ; v1.z = seed_grid.z;
 					break;
 				case 25:
-					v1.x0 = seed_grid.x0 + grid_step_size; v1.y0 = seed_grid.y0; v1.z0 = seed_grid.z0;
+					v1.x = seed_grid.x + grid_step_size; v1.y = seed_grid.y; v1.z = seed_grid.z;
 					break;
 				}//end of switch
 			//cout << v1.x0 << "   " << v1.y0 << "   " << v1.y0 << endl;
-			v1.x1 = v1.x0 + grid_step_size; v1.y1 = v1.y0 + grid_step_size; v1.z1 = v1.z0 + grid_step_size;
-			list_size = my_seed_set.size();
-			my_seed_set.insert(v1);
-			if (v1.x0 >= -1 && v1.x1 <= 1 && v1.y0 >= -1 && v1.y1 <= 1 && v1.z0 >= -1 && v1.z1 <= 1  && (my_seed_set.size()!= list_size))
+			
+			//list_size = my_seed_set.size(); //don't need this anymore
+
+			//only try to insert if it is within the correct grid.
+			if (v1.x >= -1 && (v1.x + this->grid_step_size) <= 1 && 
+				v1.y >= -1 && (v1.y + this->grid_step_size) <= 1 && 
+				v1.z >= -1 && (v1.z + this->grid_step_size) <= 1 
+				/*&& (my_seed_set.size() != list_size)*/ )
 			{
-				seed_queue.push(v1);
+				/* The pair::second element in the pair is set to true if
+				a new element was inserted. False if an equivalent element already existed.*/
+				bool seed_set_insert_successful = my_seed_set.insert(v1).second;
+
+				//only push this on the queue if it has not already been on the queue
+				if (seed_set_insert_successful){
+					seed_queue.push(v1);
+				}
+
 				//cout <<"what is pushed"<< v1.x0 << "   " << v1.y0 << "   " << v1.y0 << endl;
 				
 			}
@@ -179,14 +194,14 @@ void Marching::find_cubes_for_seeding()
 void Marching::get_seed_grid()
 {   
 	float dx = ((seed[0] - (-1)) / grid_step_size);
-	seed_grid.x0 = -1 + floor(dx)*grid_step_size;
-	seed_grid.x1 = seed_grid.x0 + grid_step_size;
+	seed_grid.x = -1 + floor(dx)*grid_step_size;
+	//seed_grid.x1 = seed_grid.x0 + grid_step_size;
 	float dy = ((seed[1] - (-1)) / grid_step_size);
-	seed_grid.y0 = -1+floor(dy)*grid_step_size;
-	seed_grid.y1 = seed_grid.y0 + grid_step_size;
+	seed_grid.y = -1+floor(dy)*grid_step_size;
+	//seed_grid.y1 = seed_grid.y0 + grid_step_size;
 	float dz = ((seed[2] - (-1)) / grid_step_size);
-	seed_grid.z0 = -1+floor(dz)*grid_step_size;
-	seed_grid.z1 = seed_grid.z0 + grid_step_size;
+	seed_grid.z = -1+floor(dz)*grid_step_size;
+	//seed_grid.z1 = seed_grid.z0 + grid_step_size;
 	//cout <<"get_grid"<< seed_grid.x0 << "  " << seed_grid.y0 << "  " << seed_grid.z0 << endl;
 }
 
@@ -271,7 +286,6 @@ bool Marching::set_grid_step_size(float v){
 
 void Marching::step_by_step_mode(bool mode){
 	this->is_step_by_step = mode;
-	
 }
 
 void Marching::reset_step(){
@@ -296,18 +310,15 @@ bool Marching::recalculate(){
 			//cout << seed_grid.x0 << "  " << seed_grid.x1 << "   " << seed_grid.y0 << "   " << seed_grid.y1 << "    " << seed_grid.z0 << "    " <<
 				//seed_grid.z1 << endl;
 			//cout << "the first do square" << endl;
-			do_square(seed_grid.x0, seed_grid.x1, seed_grid.y0,
-				seed_grid.y1, seed_grid.z0, seed_grid.z1);
+			do_square(seed_grid.x, seed_grid.y,	seed_grid.z);
 			//cout << "the first find cube" << endl;
 			this->add_step_to_poly_data();
 			find_cubes_for_seeding();
-			//this->poly_data.step_data.edge_list.clear();
 
 			while (!seed_queue.empty())	{
 				seed_grid = seed_queue.front();
 				seed_queue.pop();
-				do_square(seed_grid.x0, seed_grid.x1, seed_grid.y0,
-					seed_grid.y1, seed_grid.z0, seed_grid.z1);
+				do_square(seed_grid.x, seed_grid.y, seed_grid.z); 
 				this->add_step_to_poly_data();
 				find_cubes_for_seeding();
 				//this->poly_data.step_data.edge_list.clear();
@@ -317,7 +328,7 @@ bool Marching::recalculate(){
 		}//end of if seed mode not step by step
 		else { //seed mode with step by step
 			if (this->is_step_by_step) {
-				vertex_list x;
+				//xyz x;
 				if (this->poly_data.step_data.step_i == 0) { //last step 
 					add_step_to_poly_data();
 					this->poly_data.step_data.step_i = -1;
@@ -357,7 +368,7 @@ bool Marching::recalculate(){
 				}
 
 				add_step_to_poly_data();
-				this->do_square(seed_grid.x0, seed_grid.x1, seed_grid.y0, seed_grid.y1, seed_grid.z0, seed_grid.z1);
+				this->do_square(seed_grid.x, seed_grid.y, seed_grid.z);
 				find_cubes_for_seeding();
 
 			}
@@ -372,16 +383,13 @@ bool Marching::recalculate(){
 			this->poly_data.vertex_list.clear();
 			this->vertex_set.clear(); 
 
-			float x_0, x_1, y_0, y_1, z_0, z_1;
+			float x_0, y_0, z_0;
 
 			for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size) {
-				z_1 = z_0 + this->grid_step_size;
 				for (y_0 = -1.0; y_0 < 1.0; y_0 += this->grid_step_size) {
-					y_1 = y_0 + this->grid_step_size;
 					for (x_0 = -1.0; x_0 < 1.0; x_0 += this->grid_step_size) {
-						x_1 = x_0 + this->grid_step_size;
 
-						this->do_square(x_0, x_1, y_0, y_1, z_0, z_1);
+						this->do_square(x_0, y_0, z_0);
 						this->add_step_to_poly_data();
 					}
 				}
@@ -389,7 +397,7 @@ bool Marching::recalculate(){
 		}
 
 		else { //step by step
-			float x_0, x_1, y_0, y_1, z_0, z_1;
+			float x_0, y_0, z_0;
 			if (this->poly_data.step_data.step_i == 0){ //last step 
 				add_step_to_poly_data();
 				this->poly_data.step_data.step_i = -1;
@@ -429,14 +437,11 @@ bool Marching::recalculate(){
 				}
 				this->poly_data.step_data.step_i--;
 			}
-			x_1 = x_0 + this->grid_step_size;
-			y_1 = y_0 + this->grid_step_size;
-			z_1 = z_0 + this->grid_step_size;
-
-			cout << this->poly_data.step_data.step_i << endl;;
+			
+			//cout << this->poly_data.step_data.step_i << endl;;
 			
 			add_step_to_poly_data();
-			this->do_square(x_0, x_1, y_0, y_1, z_0, z_1);
+			this->do_square(x_0, y_0, z_0);
 		
 
 		}
@@ -460,8 +465,13 @@ float Marching::interp(float x_s, float x_e, float v_s, float v_e)
 
 }
 
-void Marching::do_square(float x_0, float x_1, float y_0, float y_1, float z_0,float z_1){
+void Marching::do_square(float x_0, float y_0, float z_0){
+	float x_1 = x_0 + this->grid_step_size;
+	float y_1 = y_0 + this->grid_step_size;
+	float z_1 = z_0 + this->grid_step_size;
+
 	//cout << x_0 << " " << y_0 << " " << z_0 << " " << x_1 << " " << y_1 << " "<<z_1<<endl;
+	
 	Step_Data* step = &this->poly_data.step_data;
 	step->intersect_coord.clear();
 	step->tri_vlist.clear();
