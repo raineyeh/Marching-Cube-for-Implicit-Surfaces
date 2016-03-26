@@ -185,12 +185,18 @@ void DrawGUI()
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 	}	
 	if (ImGui::Button("Save mesh")){
-		if (pData->vertex_list.size() == 0){
-
-		}
-
-		myfile.Save(pData);
-		if (pDrawer)pDrawer->ResetStep();
+		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
+			ImGui::OpenPopup("Save error");	
+		else{
+			myfile.Save(pData);
+			if (pDrawer)pDrawer->ResetStep();
+		}		
+	}
+	if (ImGui::BeginPopupModal("Save error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("No data to save.\n\n");
+		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		ImGui::EndPopup();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
@@ -243,6 +249,10 @@ void DrawGUI()
 	if (pData && bStepMode && pData->step_data.step_i>=0)
 		sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
 	ImGui::Text(ch);
+	
+//	static bool show = false;
+//	ImGui::ShowTestWindow(&show);
+
 	ImGui::Render();
 	bHasInit = true;	
 }
