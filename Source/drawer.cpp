@@ -185,12 +185,16 @@ void DrawGUI()
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 	}	
 	if (ImGui::Button("Save mesh")){
+		if (pData->vertex_list.size() == 0){
+
+		}
+
 		myfile.Save(pData);
 		if (pDrawer)pDrawer->ResetStep();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
-		myfile.Open();
+		myfile.Open((Poly_Data*)pData);
 		if (pDrawer)pDrawer->ResetStep();
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
@@ -424,7 +428,7 @@ void InitMatrix(){
 }
 void InitBuffer(){	
 	for (int i = 0; i < 3;i++){
-		CreateBuffer(ModelShader.getHandle(),vao[i],vbo[i],ibo[i]);
+		CreateBuffer(ModelShader.getProgram(),vao[i],vbo[i],ibo[i]);
 	}	
 }
 Drawer::Drawer(int* argc, char** argv){

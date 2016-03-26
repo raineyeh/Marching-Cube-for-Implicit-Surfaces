@@ -13,7 +13,7 @@ MyFile::~MyFile()
 }
 
 
-  bool MyFile::Open(Poly_Data* data)
+bool MyFile::Open(Poly_Data* data)
 
 {	
 	FILE *fp;
