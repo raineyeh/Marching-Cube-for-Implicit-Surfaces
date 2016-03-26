@@ -42,7 +42,7 @@ bool MyFile::Open(Poly_Data* data)
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
 	if (GetOpenFileName(&ofn) == false) return NULL;// ask gordon
-	errno_t err = fopen_s(&fp, szFilter, "r");
+	errno_t err = fopen_s(&fp, ofn.lpstrFile, "r");
 	if (NULL == fp) return  NULL; //ask gordon
 	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;

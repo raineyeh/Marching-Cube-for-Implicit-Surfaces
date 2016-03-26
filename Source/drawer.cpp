@@ -200,8 +200,12 @@ void DrawGUI()
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
+		if (pDrawer) pDrawer->GetPolyData();
 		myfile.Open((Poly_Data*)pData);
 		if (pDrawer)pDrawer->ResetStep();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		for (int i = 0; i < 3; i++)
@@ -487,9 +491,10 @@ bool Drawer::SetMarch(Marching* m){
 
 bool Drawer::GetPolyData()
 {	
-	if (pData == nullptr) 
-		pData = m_pMmarching->get_poly_data();
-	return pData != nullptr;
+	if (m_pMmarching)
+		return pData = m_pMmarching->get_poly_data();
+	else
+		return false;
 }
 
 void Drawer::Recalculate()
