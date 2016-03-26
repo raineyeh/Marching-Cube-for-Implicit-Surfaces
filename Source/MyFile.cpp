@@ -15,7 +15,9 @@ MyFile::~MyFile()
 
 bool MyFile::Open(Poly_Data* data)
 
-{	
+{
+	data->vertex_list.clear();
+	data->tri_list.clear();
 	FILE *fp;
 	OPENFILENAME ofn;
 	TCHAR	szFile[MAX_PATH] = "mesh.poly";
@@ -41,28 +43,34 @@ bool MyFile::Open(Poly_Data* data)
 	ofn.lCustData = 0L;
 	ofn.lpfnHook = NULL;
 	ofn.lpTemplateName = NULL;
-	if (GetOpenFileName(&ofn) == false) return NULL;// ask gordon
+	if (GetOpenFileName(&ofn) == false) return data;// ask gordon
 	errno_t err = fopen_s(&fp, ofn.lpstrFile, "r");
-	if (NULL == fp) return  NULL; //ask gordon
+	if (NULL == fp) return  data; //ask gordon
 	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;
 	fscanf_s(fp, "%d", &num_of_points);
+	cout << "num_of_points" << num_of_points << endl;
 	for (int i = 0; i <num_of_points; i++)
 	{
-		fscanf_s(fp, "%f %f %f", &x,&y,&z);
+		fscanf_s(fp, "%f", &x);
+		fscanf_s(fp, "%f", &y);
+		fscanf_s(fp, "%f", &z);
+		cout << "x=" << x << "y=" << y << "z=" << z << endl;
 		data->vertex_list.push_back(x);
 		data->vertex_list.push_back(y);
 		data->vertex_list.push_back(z);
 	}
 	unsigned int x0, y0, z0;
 	fscanf_s(fp, "%d", &num_of_triangles);
+	cout << "num_of_triangles" << num_of_triangles << endl;
 	for (int i = 0; i <num_of_triangles; i++)
 	{
 		fscanf_s(fp, "%u %u %u", &x0,&y0,&z0);
+		cout << "x0=" << x0 << "y0=" << y0 << "z0=" << z0 << endl;
 		data->tri_list.push_back(x0);
 		data->tri_list.push_back(y0);
 		data->tri_list.push_back(z0);
-	}
+	} 
  	fclose(fp);
 	return data;
 }
