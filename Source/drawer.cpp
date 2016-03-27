@@ -129,7 +129,13 @@ void DrawGUI()
 			pDrawer->ResetStep();
 		}			
 	}
-	if (!bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f,"Surface repeat step distance:%.2f")){
+	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeating)){
+		if (pDrawer){
+			pDrawer->SetRepeatingSurfaceMode(bRepeating);
+			pDrawer->ResetStep();
+		}
+	}
+	if (bRepeating && !bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
 		if (pDrawer){
 			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 			pDrawer->ResetStep();
@@ -203,8 +209,8 @@ void DrawGUI()
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
 		if (pDrawer) pDrawer->GetPolyData();
-		myfile.Open((Poly_Data*)pData);
-		if (pDrawer)pDrawer->ResetStep(); 
+		if(myfile.Open((Poly_Data*)pData))
+		if (pDrawer) pDrawer->ResetStep();
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
 			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
@@ -239,12 +245,7 @@ void DrawGUI()
 		else
 			glFrontFace(GL_CCW);		
 	}
-	if (ImGui::Checkbox("Repeating surface mode", &bRepeating)){
-		if (pDrawer){
-			pDrawer->SetRepeatingSurfaceMode(bRepeating);
-			pDrawer->ResetStep();
-		}			
-	}
+	
 	
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
@@ -253,9 +254,9 @@ void DrawGUI()
 	if (ImGui::ColorPlate(&colBackground,"Background color")){
 		glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
 	}
-	ImGui::ColorPlate(&colModelSurface, "Model color"); 	
+	ImGui::ColorPlate(&colModelSurface, "Surface color"); 	
 	ImGui::ColorPlate(&colCubeEdge, "Cube edge color");
-	ImGui::ColorPlate(&colModelEdge, "Model edge color"); 
+	ImGui::ColorPlate(&colModelEdge, "Surface edge color"); 
 	ImGui::ColorPlate(&colInCornerPoint, "Inside point color"); 
 	ImGui::ColorPlate(&colOutCornerPoint, "Outside point color"); 
 	ImGui::ColorPlate(&colIntersectPoint, "Intersect point color"); 
@@ -492,7 +493,7 @@ Drawer::Drawer(int* argc, char** argv){
 	InitBuffer();
 	glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
 	m_pEvaluator = nullptr;
-	m_pMmarching = nullptr;			
+	m_pMmarching = nullptr;		
 }
 
 bool Drawer::SetMarch(Marching* m){
@@ -503,7 +504,9 @@ bool Drawer::SetMarch(Marching* m){
 bool Drawer::GetPolyData()
 {	
 	if (m_pMmarching)
-		return pData = m_pMmarching->get_poly_data();
+		pData = m_pMmarching->get_poly_data();
+	if (pData)
+		return true;
 	else
 		return false;
 }
@@ -518,8 +521,7 @@ void Drawer::start(){
 	/* Start the main GLUT loop */
 	/* NOTE: No code runs after this */	
 	pDrawer = this;
-	glutMainLoop();
-	int a = 0;
+	glutMainLoop();	
 }
 
 void Drawer::SetGridSize(float fGrid)

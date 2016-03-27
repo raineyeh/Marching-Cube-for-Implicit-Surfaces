@@ -3,7 +3,7 @@
 
 #include "marching.h"
 #include <string>
-#include <objbase.h>
+
 class Drawer{
 public:
 	Drawer(int*, char**);
@@ -21,7 +21,7 @@ public:
 	void ResetStep();	
 private:
 	Marching* m_pMmarching;
-	Evaluator* m_pEvaluator;		
+	Evaluator* m_pEvaluator;	
 };
 
 
