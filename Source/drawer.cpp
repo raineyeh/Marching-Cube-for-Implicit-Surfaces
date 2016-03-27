@@ -195,17 +195,28 @@ void DrawGUI()
 	if (ImGui::BeginPopupModal("Save error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("No data to save.\n\n");
-		if (ImGui::Button("OK", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+		if (ImGui::Button("OK", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup(); 
+		}
 		ImGui::EndPopup();
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
 		if (pDrawer) pDrawer->GetPolyData();
 		myfile.Open((Poly_Data*)pData);
-		if (pDrawer)pDrawer->ResetStep();
+		if (pDrawer)pDrawer->ResetStep(); 
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
 			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+		else ImGui::OpenPopup("Load error");
+	}
+	if (ImGui::BeginPopupModal("Load error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("No data to load.\n\n");
+		if (ImGui::Button("OK", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		for (int i = 0; i < 3; i++)
