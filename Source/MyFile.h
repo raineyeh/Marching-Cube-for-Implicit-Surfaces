@@ -11,7 +11,7 @@ public:
 	MyFile();
 	~MyFile();
 
-	bool Open(Poly_Data*){ return false };
+	bool Open(Poly_Data*){ return false; }
     bool Save(const Poly_Data*);
 	Poly_Data* Open();
 
