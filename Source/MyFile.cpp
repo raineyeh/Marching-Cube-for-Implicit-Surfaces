@@ -13,9 +13,9 @@ MyFile::~MyFile()
 }
 
 
-bool MyFile::Open(Poly_Data* data)
-
-{
+Poly_Data* MyFile::Open(){
+	Poly_Data* data = &poly_data;
+	
 	data->vertex_list.clear();
 	data->tri_list.clear();
 	FILE *fp;
