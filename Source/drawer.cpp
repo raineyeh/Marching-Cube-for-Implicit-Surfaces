@@ -53,16 +53,12 @@ Drawer* pDrawer = nullptr;
 ShaderLib ModelShader;
 thrd_t MovieThread;
 //cube idx
-unsigned int idxCube[36] = { 0, 2, 1, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 4, 7, 4, 3, 0, 4, 5, 6, 6, 7, 4 };
+unsigned int idxCube[36] = { 1, 0, 2, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 0, 7, 0, 4, 7, 4, 5, 6, 6, 7, 4 };
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
 
 void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){	
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);
+	glNamedBufferData(ibo, ni, pi, GL_DYNAMIC_DRAW);
 }
 void SetStepData(){
 	if (pData == nullptr) return;
@@ -132,6 +128,7 @@ void DrawGUI()
 	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeating)){
 		if (pDrawer){
 			pDrawer->SetRepeatingSurfaceMode(bRepeating);
+			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 			pDrawer->ResetStep();
 		}
 	}
@@ -233,10 +230,16 @@ void DrawGUI()
 		}			
 	}
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
-		if (bTranslucent)
+		if (bTranslucent){
 			glDisable(GL_DEPTH_TEST); 
-		else
+		//	glEnable(GL_BLEND);			
+		}
+			
+		else{
 			glEnable(GL_DEPTH_TEST);	
+		//	glDisable(GL_BLEND);			
+		}
+			
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (ImGui::Checkbox("Invert face", &bInvertFace)){	
@@ -244,8 +247,7 @@ void DrawGUI()
 			glFrontFace(GL_CW);
 		else
 			glFrontFace(GL_CCW);		
-	}
-	
+	}	
 	
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
@@ -313,13 +315,13 @@ void DrawCube(){
 	SetStepData();
 
 	//cube	
-	glDepthMask(false);
+	glDepthMask(false);	
 	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
 	ModelShader.setUniform("ucolor", glm::vec4(colCubeSurface.x, colCubeSurface.y, colCubeSurface.z, 0.5f));
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
-	glDepthMask(false);
+	glDepthMask(true);
 	
 	//edge
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);	

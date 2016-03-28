@@ -1,4 +1,4 @@
-#version 400
+#version 450 core
 out vec4 fragcolor;   
 in vec3 fColor;   
 uniform float time;   
