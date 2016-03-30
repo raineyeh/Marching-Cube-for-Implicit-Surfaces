@@ -21,6 +21,8 @@ public:
 	void ResetStep();	
 	void LoadFile();
 	void SaveFile();
+	void SetSeedMode(bool);
+	bool SetSeed(float[3]);
 private:
 	Marching* m_pMmarching;
 	Evaluator* m_pEvaluator;	

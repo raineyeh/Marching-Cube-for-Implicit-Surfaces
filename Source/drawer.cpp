@@ -33,7 +33,8 @@ static float fGrid = 0.25f;
 static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
 static float fPercent;
-static bool bStepMode, bTranslucent, bInvertFace, bRepeating;
+static float fSeeding[3];
+static bool bStepMode,bSeedingMode, bTranslucent, bInvertFace, bRepeatingMode;
 static ImVec4 colBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
 static ImVec4 colModelFrontFace = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
 static ImVec4 colModelBackFace = ImColor(0.2f, 0.2f, 0.2f, 0.5f);
@@ -140,19 +141,7 @@ void DrawGUI()
 			pDrawer->ResetStep();
 		}			
 	}
-	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeating)){
-		if (pDrawer){
-			pDrawer->SetRepeatingSurfaceMode(bRepeating);
-			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
-			pDrawer->ResetStep();
-		}
-	}
-	if (bRepeating && !bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
-		if (pDrawer){
-			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
-			pDrawer->ResetStep();
-		}
-	}
+	
 	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
 		pDrawer->SetEquation(string(szInput));
 		pDrawer->SetGridSize(fGrid);
@@ -240,12 +229,39 @@ void DrawGUI()
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->GetPolyData();
+		bSeedingMode = false;
+		bRepeatingMode = false;
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 		if (pDrawer){
 			pDrawer->ResetStep();
 			pDrawer->SetStepMode(bStepMode);
 		}			
+	}
+	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){		
+		bStepMode = false;
+		bRepeatingMode = false;
+		if (pDrawer) pDrawer->SetSeedMode(bSeedingMode);
+	}
+	if (bSeedingMode){
+		if(ImGui::InputFloat3("5", fSeeding))
+		if (pDrawer) pDrawer->SetSeed(fSeeding);
+		ImGui::Text("		  Seeding point");
+	}
+	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeatingMode)){
+		if (pDrawer){
+			pDrawer->SetRepeatingSurfaceMode(bRepeatingMode);
+			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
+			pDrawer->ResetStep();
+		}
+		bStepMode = false;
+		bSeedingMode = false;
+	}
+	if (bRepeatingMode && !bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
+		if (pDrawer){
+			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
+			pDrawer->ResetStep();
+		}
 	}
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
@@ -277,8 +293,8 @@ void DrawGUI()
 	ImGui::ColorPlate(&colOutCornerPoint, "Outside point color"); 
 	ImGui::ColorPlate(&colIntersectPoint, "Intersect point color");	
 	ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
-//	static bool show = false;
-//	ImGui::ShowTestWindow(&show);
+// 	static bool show = false;
+// 	ImGui::ShowTestWindow(&show);
 	ImGui::Render();
 	bHasInit = true;	
 }
@@ -593,6 +609,20 @@ void Drawer::SaveFile()
 {
 	if (m_pMmarching)
 		m_pMmarching->save_poly_to_file();
+}
+
+void Drawer::SetSeedMode(bool bSeed)
+{
+	if (m_pMmarching)
+		m_pMmarching->seed_mode(bSeed);
+}
+
+bool Drawer::SetSeed(float fSeed[3])
+{
+	if (m_pMmarching)
+		return m_pMmarching->set_seed(fSeed[0], fSeed[1], fSeed[2]);
+	else
+		false;
 }
 
 void Drawer::SetEvaluator(Evaluator* e){
