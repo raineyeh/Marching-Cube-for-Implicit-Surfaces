@@ -44,6 +44,7 @@ public:
 	bool set_grid_step_size(float);	// must be between [0.001,0.5]. Changing this will reset step in step_by_step_mode.
 	void step_by_step_mode(bool);
 	void reset_step();
+	void reset_all_data();
 	Poly_Data const * get_poly_data();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
 	void set_surface_constant(float); //Defines at what value the surface is drawn. Default to 0
@@ -52,6 +53,8 @@ public:
     void seed_mode(bool);//this to set the seed mode to true or false 
 	bool set_seed(float x, float y, float z);   //reading the seeed from the UI and checking 
 	
+	bool load_poly_from_file(); //load polygonal data from file in .poly format. result can be retrieved with get_poly_data()
+	bool save_poly_to_file(); //save polygonal data to file in .poly format.
 
 private:
 	float evaluate(float x, float y, float z);

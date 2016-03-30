@@ -1,5 +1,7 @@
 #include "marching.h"
 #include "marching_lookup.h"
+
+#include <windows.h>
 #include <iostream>
 #include <math.h>
 #include <queue>
@@ -98,7 +100,6 @@ void Marching::get_starting_seed_grid( xyz* seed_grid)
 	//cout <<"get_grid"<< seed_grid.x0 << "  " << seed_grid.y0 << "  " << seed_grid.z0 << endl;
 }
 
-
 bool Marching::set_evaluator(Evaluator* e){
 	if (e){
 		evaluator = e;
@@ -108,24 +109,22 @@ bool Marching::set_evaluator(Evaluator* e){
 		return false;
 }
 
-
 void Marching::set_surface_constant(float c){
 
 	this->surface_constant = c;
 }
+
 bool Marching::set_surface_repeat_step_distance(float l){
 	if (l <= 0)
 		return false;
 	this->surface_step = l;
 	return true;
 }
-//function to start seed_mode
-void Marching::seed_mode(bool seed)
-{   
+
+void Marching::seed_mode(bool seed){   
 	this->is_seed_mode = seed; 
 	
 }
-//function to set the seed_value into x,y,z 
 
 bool Marching::set_seed(float x, float y, float z)
 {    
@@ -137,7 +136,6 @@ bool Marching::set_seed(float x, float y, float z)
 	else
 		return false; 
 }
-
 
 bool Marching::repeating_surface_mode(bool b){
 	if (this->surface_step < 0){
@@ -176,13 +174,25 @@ bool Marching::set_grid_step_size(float v){
 
 }
 
-
 void Marching::step_by_step_mode(bool mode){
 	this->is_step_by_step = mode;
 }
 
 void Marching::reset_step(){
 	this->poly_data.step_data.step_i = -2;
+}
+
+void Marching::reset_all_data(){
+	this->poly_data.tri_list.clear();
+	this->poly_data.vertex_list.clear();
+	this->poly_data.step_data.intersect_coord.clear();
+	this->poly_data.step_data.tri_vlist.clear();
+
+	this->vertex_set.clear();
+	this->my_seed_set.clear();
+	while (!seed_queue.empty())
+		seed_queue.pop();
+	reset_step();
 }
 
 bool Marching::recalculate(){
@@ -193,11 +203,7 @@ bool Marching::recalculate(){
 		{//find intersections of the seed grid 
 		//call the grids that have common edges with the intersection 
 
-			this->poly_data.step_data.step_i = -2;
-			this->poly_data.tri_list.clear();
-			this->poly_data.vertex_list.clear();
-			this->vertex_set.clear();
-			this->my_seed_set.clear();
+			reset_all_data();
 
 			get_starting_seed_grid(&seed_grid);
 
@@ -235,14 +241,7 @@ bool Marching::recalculate(){
 					return false;
 				}
 				if (this->poly_data.step_data.step_i == -2) { //first step
-					this->poly_data.tri_list.clear();
-					this->poly_data.vertex_list.clear();
-					this->poly_data.step_data.intersect_coord.clear();
-					this->poly_data.step_data.tri_vlist.clear();
-					this->vertex_set.clear();
-					this->my_seed_set.clear();
-					while (!seed_queue.empty()) 
-						seed_queue.pop();
+					reset_all_data();
 
 					get_starting_seed_grid(&seed_grid);
 					seed_queue.push(seed_grid);
@@ -274,12 +273,8 @@ bool Marching::recalculate(){
 
 	else { //None-seed mode
 		if (!this->is_step_by_step) {
-
-			this->poly_data.step_data.step_i = -2;
-			this->poly_data.tri_list.clear();
-			this->poly_data.vertex_list.clear();
-			this->vertex_set.clear(); 
-
+			reset_all_data();
+			
 			float x_0, y_0, z_0;
 
 			for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size) {
@@ -304,13 +299,9 @@ bool Marching::recalculate(){
 				return false;
 			}
 			if (this->poly_data.step_data.step_i == -2){ //first step
-				this->poly_data.tri_list.clear();
-				this->poly_data.vertex_list.clear();
-				this->vertex_set.clear();
-				this->poly_data.step_data.intersect_coord.clear();
-				this->poly_data.step_data.tri_vlist.clear();
+				reset_all_data();
 
-				x_0 = -1; y_0 = -1; z_0 = -1;
+				x_0 = y_0 = z_0 = -1;
 
 				//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
 				this->poly_data.step_data.step_i = 0;
@@ -560,8 +551,147 @@ int Marching::add_triangle(int p1, int p2, int p3){
 	return new_tri_i;
 }
 
-
 Poly_Data const * Marching::get_poly_data(){
 	
 	return &this->poly_data;
+}
+
+bool Marching::load_poly_from_file(){
+	
+	reset_all_data();
+	
+	FILE *fp;
+	OPENFILENAME OpenFilename;
+	TCHAR	szFile[MAX_PATH] = "mesh.poly";
+	TCHAR	szTitle[MAX_PATH] = "points";
+	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
+	OpenFilename.lStructSize = sizeof(OPENFILENAME);
+	OpenFilename.hwndOwner = NULL;
+	OpenFilename.hInstance = NULL;
+	OpenFilename.lpstrFilter = szFilter;
+	OpenFilename.lpstrCustomFilter = NULL;
+	OpenFilename.nMaxCustFilter = 0;
+	OpenFilename.nFilterIndex = 0;
+	OpenFilename.lpstrFile = szFile;
+	OpenFilename.nMaxFile = MAX_PATH;
+	OpenFilename.lpstrFileTitle = szTitle;
+	OpenFilename.nMaxFileTitle = MAX_PATH;
+	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrTitle = "Open";
+	OpenFilename.Flags = OFN_EXPLORER;
+	OpenFilename.nFileOffset = 0;
+	OpenFilename.nFileExtension = 0;
+	OpenFilename.lpstrDefExt = TEXT("poly");
+	OpenFilename.lCustData = 0L;
+	OpenFilename.lpfnHook = NULL;
+	OpenFilename.lpTemplateName = NULL;
+
+	if (!GetOpenFileName(&OpenFilename)) 
+		return false;
+
+	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "r");
+	
+	if (NULL == fp)
+		return  false; 
+
+	int num_of_points = 0; int num_of_triangles = 0;
+	float x = 0, y = 0, z = 0;
+
+	fscanf_s(fp, "%d", &num_of_points);
+	//cout << "num_of_points" << num_of_points << endl;
+	for (int i = 0; i <num_of_points; i++){
+		fscanf_s(fp, "%f", &x);
+		fscanf_s(fp, "%f", &y);
+		fscanf_s(fp, "%f", &z);
+		//cout << "x=" << x << "y=" << y << "z=" << z << endl;
+		poly_data.vertex_list.push_back(x);
+		poly_data.vertex_list.push_back(y);
+		poly_data.vertex_list.push_back(z);
+	}
+	unsigned int x0, y0, z0;
+	fscanf_s(fp, "%d", &num_of_triangles);
+	//cout << "num_of_triangles" << num_of_triangles << endl;
+	for (int i = 0; i <num_of_triangles; i++)
+	{
+		fscanf_s(fp, "%u %u %u", &x0, &y0, &z0);
+		//cout << "x0=" << x0 << "y0=" << y0 << "z0=" << z0 << endl;
+		poly_data.tri_list.push_back(x0);
+		poly_data.tri_list.push_back(y0);
+		poly_data.tri_list.push_back(z0);
+	}
+	fclose(fp);
+	return true;
+}
+
+bool Marching::save_poly_to_file(){
+	FILE *fp;
+	OPENFILENAME OpenFilename;
+	TCHAR	szFile[MAX_PATH] = "output.poly";
+	TCHAR	szTitle[MAX_PATH] = "points";
+	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
+	OpenFilename.lStructSize = sizeof (OPENFILENAME);
+	OpenFilename.hwndOwner = NULL;
+	OpenFilename.hInstance = NULL;
+	OpenFilename.lpstrFilter = szFilter;
+	OpenFilename.lpstrCustomFilter = NULL;
+	OpenFilename.nMaxCustFilter = 0;
+	OpenFilename.nFilterIndex = 0;
+	OpenFilename.lpstrFile = szFile;
+	OpenFilename.nMaxFile = MAX_PATH;
+	OpenFilename.lpstrFileTitle = szTitle;
+	OpenFilename.nMaxFileTitle = MAX_PATH;
+	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrTitle = "Save data";
+	OpenFilename.Flags = OFN_EXPLORER;
+	OpenFilename.nFileOffset = 0;
+	OpenFilename.nFileExtension = 0;
+	OpenFilename.lpstrDefExt = TEXT("poly");
+	OpenFilename.lCustData = 0L;
+	OpenFilename.lpfnHook = NULL;
+	OpenFilename.lpTemplateName = NULL;
+
+	if ( this->poly_data.vertex_list.empty()) 
+		return false;
+
+	if (GetOpenFileName(&OpenFilename) == false) 
+		return false;
+
+	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");
+
+	if (NULL == fp) 
+		return false;
+
+	int num_of_points = 0; int num_of_triangles = 0;
+	float x = 0, y = 0, z = 0;
+	num_of_points = ((this->poly_data.vertex_list.size()) / 3);
+	cout << num_of_points;
+	char buffer[50];
+	sprintf_s(buffer, "%d", num_of_points);
+	fprintf_s(fp, "%s", buffer);
+	fprintf_s(fp, "\n");
+	for (int i = 0; i < num_of_points; i++)
+	{
+		x = poly_data.vertex_list[i * 3];
+		y = poly_data.vertex_list[i * 3 + 1];
+		z = poly_data.vertex_list[i * 3 + 2];
+		sprintf_s(buffer, "%f %f %f\n", x, y, z);
+		fprintf_s(fp, "%s", buffer);
+	}
+	num_of_triangles = ((poly_data.tri_list.size()) / 3);
+	unsigned int x0 = 0, y0 = 0, z0 = 0;
+	sprintf_s(buffer, "%d", num_of_triangles);
+	fprintf_s(fp, "%s", buffer);
+	fprintf_s(fp, "\n");
+	for (int i = 0; i < num_of_triangles; i++)
+	{
+		x0 = poly_data.tri_list.at(i * 3);
+		y0 = poly_data.tri_list.at(i * 3 + 1);
+		z0 = poly_data.tri_list.at(i * 3 + 2);
+		sprintf_s(buffer, "%u %u %u\n", x0, y0, z0);
+		fprintf_s(fp, "%s", buffer);
+
+	}
+	fclose(fp);
+	return true;
+
 }
