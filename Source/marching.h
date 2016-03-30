@@ -51,17 +51,19 @@ public:
 	bool repeating_surface_mode(bool);
     void seed_mode(bool);//this to set the seed mode to true or false 
 	bool set_seed(float x, float y, float z);   //reading the seeed from the UI and checking 
-	void get_seed_grid();  //to find where is the starting grid for the seed point 
+	
 
 private:
 	float evaluate(float x, float y, float z);
-	void do_square(float, float, float);
+	void calculate_step(float, float, float);
 	int add_triangle(int, int, int);
 	int add_point(float, float, float);
 	void add_step_to_poly_data();
 	float interp(float, float, float, float);
 	void find_cubes_for_seeding();
 	void print_step_info();
+
+	void get_starting_seed_grid(xyz*);  //to find where is the starting grid for the seed point 
 
 	Evaluator* evaluator;
 	float grid_step_size;
@@ -75,7 +77,7 @@ private:
 
 	bool is_seed_mode;
 	float seed[3] ;
-	xyz seed_grid;
+	//xyz seed_grid;
 	queue <xyz> seed_queue;
 	set<xyz> my_seed_set;
 };
