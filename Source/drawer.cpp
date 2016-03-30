@@ -207,8 +207,7 @@ void DrawGUI()
 		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
 			ImGui::OpenPopup("Save error");	
 		else{
-			myfile.Save(pData);
-			if (pDrawer)pDrawer->ResetStep();
+			if (pDrawer)pDrawer->SaveFile();			
 		}		
 	}
 	if (ImGui::BeginPopupModal("Save error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -221,9 +220,11 @@ void DrawGUI()
 	}
 	ImGui::SameLine();
 	if (ImGui::Button("Load mesh")){
-		if (pDrawer) pDrawer->GetPolyData();
-		if(myfile.Open((Poly_Data*)pData))
-		if (pDrawer) pDrawer->ResetStep();
+		if (pDrawer) {
+			pDrawer->LoadFile();
+			pDrawer->ResetStep();
+			pDrawer->GetPolyData();
+		}
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
 			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
@@ -580,6 +581,18 @@ void Drawer::SetEquation(string s){
 void Drawer::ResetStep(){
 	if (m_pMmarching)
 		m_pMmarching->reset_step();
+}
+
+void Drawer::LoadFile()
+{
+	if (m_pMmarching)
+		m_pMmarching->load_poly_from_file();
+}
+
+void Drawer::SaveFile()
+{
+	if (m_pMmarching)
+		m_pMmarching->save_poly_to_file();
 }
 
 void Drawer::SetEvaluator(Evaluator* e){
