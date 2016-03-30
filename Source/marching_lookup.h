@@ -42,12 +42,30 @@ int cube_edge_vertex_table[][2] = { //edge i is on cube vertex vj,vk
 };
 
 int cube_face_vertex_table[][4] = { // face i has vertex v1,v2,v3,v4
-	{0,1,2,3},
-	{1,2,6,5},
-	{4,5,6,7},
-	{0,3,7,4},
-	{0,1,5,4},
-	{3,2,6,7}
+	{ 0, 1, 2, 3 },
+	{ 1, 2, 6, 5 },
+	{ 4, 5, 6, 7 },
+	{ 0, 3, 7, 4 },
+	{ 3, 2, 6, 7 },
+	{ 0, 1, 5, 4 }
+};
+
+int cube_face_edge_table[][4] = { //face i has edge e1,e2,e3,e4
+	{ 0, 1, 2, 3 },
+	{ 1, 9, 5, 10 },
+	{ 4, 5, 6, 7 },
+	{ 8, 7, 11, 3 },
+	{ 2, 10, 6, 11 },
+	{ 0, 9, 4, 8 }
+};
+
+int cube_face_normal[][3] = { // face i has normal x,y,z
+	{0,0,-1},
+	{1,0,0},
+	{0,0,1},
+	{-1,0,0},
+	{0,1,0},
+	{0,-1,0}
 };
 
 int tri_table[][16] = {

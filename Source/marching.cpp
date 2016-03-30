@@ -664,7 +664,7 @@ bool Marching::save_poly_to_file(){
 	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;
 	num_of_points = ((this->poly_data.vertex_list.size()) / 3);
-	cout << num_of_points;
+	//cout << num_of_points;
 	char buffer[50];
 	sprintf_s(buffer, "%d", num_of_points);
 	fprintf_s(fp, "%s", buffer);
