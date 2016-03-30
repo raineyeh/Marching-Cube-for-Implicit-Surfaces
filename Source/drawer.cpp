@@ -229,7 +229,7 @@ void DrawGUI()
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->GetPolyData();
-		bSeedingMode = false;
+		
 		bRepeatingMode = false;
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
@@ -239,7 +239,7 @@ void DrawGUI()
 		}			
 	}
 	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){		
-		bStepMode = false;
+		
 		bRepeatingMode = false;
 		if (pDrawer) pDrawer->SetSeedMode(bSeedingMode);
 	}
@@ -592,6 +592,8 @@ void Drawer::SetStepMode(bool mode)
 void Drawer::SetEquation(string s){
 	if (m_pEvaluator)
 		m_pEvaluator->set_equation(s);	
+	if (m_pMmarching)
+		m_pMmarching->reset_all_data();
 }
 
 void Drawer::ResetStep(){
