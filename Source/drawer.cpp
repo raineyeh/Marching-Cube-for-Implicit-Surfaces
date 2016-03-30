@@ -19,9 +19,12 @@
 using namespace std;
 
 /* Window information */
-float nWindowHeight = 700;
-float nBarWidth = 380;
-float nWindowWidth = nWindowHeight + nBarWidth;
+int nBase = 700;
+int nPolynomialHeight = 110;
+int nWindowHeight = nBase + nPolynomialHeight;
+int nBarWidth = 380;
+int nWindowWidth = nBase + nBarWidth;
+
 int windowID = -1;
 float nColor = 48;
 /* Data information */
@@ -29,6 +32,8 @@ const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char szInput[256] = "x^2+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
+static char szScaler[256] = "1.0";
+static char szSurfaceConstant[256] = "0.0";
 static float fGrid = 0.25f;
 static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
@@ -45,7 +50,7 @@ static ImVec4 colIntersectPoint = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colIntersectSurface = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
 static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
-bool bPressed, bHasInit, bMovie, bPause, bCubeStep;
+bool bLeftPressed, bRightPressed, bHasInit, bMovie, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
 GLuint vao[4], vbo[4], ibo[4];//0 for model, 1 for cube, 2 for intersect, 3 for intersect polugon
@@ -120,28 +125,28 @@ static int Movie(void*)
 void DrawGUI()
 {	
 	ImGui_ImplGlut_NewFrame("Marching Cube",0.96f);
-	ImVec2 wsize(nBarWidth, nWindowHeight);
+	ImVec2 wsize(nBarWidth, nWindowHeight - nPolynomialHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
 	ImVec2 wpos(nWindowWidth - nBarWidth, 0);
 	ImGui::SetWindowPos(wpos);
-	if (!bMovie){
-		ImGui::InputText("1", szInput, 256, 0);
-		ImGui::Text("			Polynomial");		
-	}		
+	//if (!bMovie){
+	//	ImGui::InputText("1", szInput, 256, 0);
+	//	ImGui::Text("			Polynomial");		
+	//}		
 	if (!bMovie && ImGui::SliderFloat("2", &fGrid, 0.1f, 0.5f, "Grid size: %.2f")){
 		if (pDrawer) {
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->ResetStep();
 		}			
 	}
-	if (!bMovie && ImGui::SliderFloat("3", &fSurfaceConstant, 0.1f, 1.0f, "Surface constant: %.2f")){
+/*	if (!bMovie && ImGui::SliderFloat("3", &fSurfaceConstant, 0.1f, 1.0f, "Surface constant: %.2f")){
 		if (pDrawer){
 			pDrawer->SetSurfaceConstant(fSurfaceConstant);
 			pDrawer->ResetStep();
 		}			
 	}
-	
+*/
 	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
 		pDrawer->SetEquation(string(szInput));
 		pDrawer->SetGridSize(fGrid);
@@ -230,7 +235,7 @@ void DrawGUI()
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->GetPolyData();
 		
-		bRepeatingMode = false;
+		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 		if (pDrawer){
@@ -238,26 +243,21 @@ void DrawGUI()
 			pDrawer->SetStepMode(bStepMode);
 		}			
 	}
-	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){		
-		
-		bRepeatingMode = false;
+	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
 		if (pDrawer) pDrawer->SetSeedMode(bSeedingMode);
-	}
-	if (bSeedingMode){
-		if(ImGui::InputFloat3("5", fSeeding))
-		if (pDrawer) pDrawer->SetSeed(fSeeding);
-		ImGui::Text("		  Seeding point");
-	}
+	}	
+	if (!bMovie && ImGui::InputFloat3("5", fSeeding))
+	if (pDrawer) pDrawer->SetSeed(fSeeding);
+	ImGui::Text("		  Seeding point");
+	
 	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeatingMode)){
 		if (pDrawer){
 			pDrawer->SetRepeatingSurfaceMode(bRepeatingMode);
 			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 			pDrawer->ResetStep();
-		}
-		bStepMode = false;
-		bSeedingMode = false;
+		}		
 	}
-	if (bRepeatingMode && !bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
+	if (!bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
 		if (pDrawer){
 			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 			pDrawer->ResetStep();
@@ -277,24 +277,50 @@ void DrawGUI()
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
 	}		  
-	char ch[20] = { 0 };
-	if (pData && bStepMode && pData->step_data.step_i >= 0)
-		sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
-	ImGui::Text(ch);
-	ImGui::Separator();
-	if (ImGui::ColorPlate(&colBackground,"Background color")){
-		glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
+	if (!bSeedingMode){
+		char ch[20] = { 0 };
+		if (pData && bStepMode && pData->step_data.step_i >= 0)
+			sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
+		ImGui::Text(ch);
+	}		
+
+	if (bRightPressed)
+		ImGui::OpenPopup("menu");
+	if (ImGui::BeginPopup("menu"))
+	{
+		if (ImGui::ColorPlate(&colBackground, "Background color")){
+			glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
+		}
+		ImGui::ColorPlate(&colModelFrontFace, "Surface front color");
+		ImGui::ColorPlate(&colModelBackFace, "Surface back color");
+		ImGui::ColorPlate(&colCubeEdge, "Cube edge color");
+		ImGui::ColorPlate(&colModelEdge, "Surface edge color");
+		ImGui::ColorPlate(&colInCornerPoint, "Inside point color");
+		ImGui::ColorPlate(&colOutCornerPoint, "Outside point color");
+		ImGui::ColorPlate(&colIntersectPoint, "Intersect point color");
+		ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
+		ImGui::EndPopup();
 	}
-	ImGui::ColorPlate(&colModelFrontFace, "Surface front color"); 	
-	ImGui::ColorPlate(&colModelBackFace, "Surface back color");
-	ImGui::ColorPlate(&colCubeEdge, "Cube edge color");
-	ImGui::ColorPlate(&colModelEdge, "Surface edge color"); 
-	ImGui::ColorPlate(&colInCornerPoint, "Inside point color"); 
-	ImGui::ColorPlate(&colOutCornerPoint, "Outside point color"); 
-	ImGui::ColorPlate(&colIntersectPoint, "Intersect point color");	
-	ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
-// 	static bool show = false;
-// 	ImGui::ShowTestWindow(&show);
+
+	//P
+	if (!bMovie){	
+	ImGui::Begin("ImGui Demo", 0.85f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
+	ImGui::SetWindowSize(psize);
+	ImVec2 ppos(0, nWindowHeight-nPolynomialHeight);
+	ImGui::SetWindowPos(ppos);
+	ImGui::Text("P(sx,sy,sz)=");
+	ImGui::SetWindowFontScale(4.0);
+	ImGui::InputText("=", szInput, 256, 0);ImGui::SameLine();	
+	ImGui::InputText("s", szSurfaceConstant, 256, 0);
+	ImGui::SetWindowFontScale(1.0);
+	ImGui::InputText("Scaler", szScaler, 256, 0);
+	ImGui::End();
+	}
+
+	static bool show = false;
+	// 	ImGui::ShowTestWindow(&show);
+
 	ImGui::Render();
 	bHasInit = true;	
 }
@@ -454,7 +480,7 @@ void special(int key, int x, int y){
 
 void motion(int x, int y){
 	ImGui_ImplGlut_MouseMotionCallback(x, y);
-	if (bPressed && x < nWindowWidth - nBarWidth)
+	if (bLeftPressed && x < nWindowWidth - nBarWidth)
 	 {  // if left button is pressed
 		nCurX = x;
 		nCurY = y;
@@ -465,14 +491,18 @@ void mouse(int button, int state, int x, int y)
 {
 	ImGui_ImplGlut_MouseButtonCallback(button, state);
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-		bPressed = true;
+		bLeftPressed = true;
 		if (x < nWindowWidth - nBarWidth){
 			nLastX = nCurX = x;
 			nLastY = nCurY = y;
 		}
 	}
+	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN){
+		bRightPressed = true;
+	}
 	else {
-		bPressed = false;
+		bLeftPressed = false;
+		bRightPressed = false;
 	}
 }
 
@@ -480,7 +510,7 @@ void idle(){
 	glutPostRedisplay();
 }
 void reshape(int w, int h){
-	glViewport(0, 0, w - nBarWidth, h);
+	glViewport(0, nPolynomialHeight, w - nBarWidth, h - nPolynomialHeight);
 	nWindowWidth = w;
 	nWindowHeight = h;
 }
