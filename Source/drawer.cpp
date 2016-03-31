@@ -20,7 +20,7 @@ using namespace std;
 
 /* Window information */
 int nBase = 700;
-int nPolynomialHeight = 110;
+int nPolynomialHeight = 70;
 int nWindowHeight = nBase + nPolynomialHeight;
 int nBarWidth = 380;
 int nWindowWidth = nBase + nBarWidth;
@@ -31,7 +31,7 @@ float nColor = 48;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char szInput[256] = "x^2+y";//x^2+y^2-0.5   (y-0.1)^2-(z*z+2*x)^2+0.1
+static char szInput[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
 static char szScaler[256] = "1.0";
 static char szSurfaceConstant[256] = "0.0";
 static float fGrid = 0.25f;
@@ -39,6 +39,7 @@ static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
 static float fPercent;
 static float fSeeding[3];
+static int nMovieSpeed = 5;
 static bool bStepMode,bSeedingMode, bTranslucent, bInvertFace, bRepeatingMode;
 static ImVec4 colBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
 static ImVec4 colModelFrontFace = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
@@ -109,10 +110,10 @@ static int Movie(void*)
 		for (int nStep = 0; nStep < 4; nStep++)
 		{
 			nCubeStep++;
-			Sleep(200);
+			Sleep(200+(5 - nMovieSpeed) * 10);
 		}
 		nCubeStep = -1;
-		Sleep(50);		
+		Sleep(50 + (5 - nMovieSpeed)*10);
 	}	
 	pDrawer->SetStepMode(false);
 	pDrawer->ResetStep();
@@ -128,36 +129,16 @@ void DrawGUI()
 	ImVec2 wsize(nBarWidth, nWindowHeight - nPolynomialHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
-	ImVec2 wpos(nWindowWidth - nBarWidth, 0);
+	ImVec2 wpos(nWindowWidth - nBarWidth, nPolynomialHeight);
 	ImGui::SetWindowPos(wpos);
-	//if (!bMovie){
-	//	ImGui::InputText("1", szInput, 256, 0);
-	//	ImGui::Text("			Polynomial");		
-	//}		
+	
 	if (!bMovie && ImGui::SliderFloat("2", &fGrid, 0.1f, 0.5f, "Grid size: %.2f")){
 		if (pDrawer) {
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->ResetStep();
 		}			
 	}
-/*	if (!bMovie && ImGui::SliderFloat("3", &fSurfaceConstant, 0.1f, 1.0f, "Surface constant: %.2f")){
-		if (pDrawer){
-			pDrawer->SetSurfaceConstant(fSurfaceConstant);
-			pDrawer->ResetStep();
-		}			
-	}
-*/
-	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
-		pDrawer->SetEquation(string(szInput));
-		pDrawer->SetGridSize(fGrid);
-		pDrawer->Recalculate();
-		pDrawer->GetPolyData();		
-		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-				   vbo[0], pData->vertex_list.size()*sizeof(float),(void*)&pData->vertex_list[0]);	
-
-	}
-	ImGui::SameLine();
+	ImGui::SliderInt("3", &nMovieSpeed, 1, 9, "Movie speed: %.f");	
 	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
 			bMovie = false;
@@ -191,12 +172,7 @@ void DrawGUI()
 		}
 	}	
 	ImGui::SameLine();
-	if (!bMovie && ImGui::Button("Reset") ){
-		if (pDrawer)
-			pDrawer->ResetStep();
-		for (int i = 0; i < 3;i++)
-			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
-	}	
+	
 	if (ImGui::Button("Save mesh")){
 		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
 			ImGui::OpenPopup("Save error");	
@@ -233,9 +209,7 @@ void DrawGUI()
 		ImGui::EndPopup();
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
-		pDrawer->GetPolyData();
-		
-		
+		pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 		if (pDrawer){
@@ -302,21 +276,40 @@ void DrawGUI()
 		ImGui::EndPopup();
 	}
 
-	//P
-	if (!bMovie){	
-	ImGui::Begin("ImGui Demo", 0.85f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	//top bar	
+	ImGui::Begin("ImGui Demo", 0.75f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
 	ImGui::SetWindowSize(psize);
-	ImVec2 ppos(0, nWindowHeight-nPolynomialHeight);
+	ImVec2 ppos(0,0);
 	ImGui::SetWindowPos(ppos);
-	ImGui::Text("P(sx,sy,sz)=");
-	ImGui::SetWindowFontScale(4.0);
+	ImGui::Text("P(sx,sy,sz)="); ImGui::SameLine();
+	ImGui::SetWindowFontScale(1.5);
 	ImGui::InputText("=", szInput, 256, 0);ImGui::SameLine();	
-	ImGui::InputText("s", szSurfaceConstant, 256, 0);
-	ImGui::SetWindowFontScale(1.0);
-	ImGui::InputText("Scaler", szScaler, 256, 0);
-	ImGui::End();
+	if (ImGui::InputText("s", szSurfaceConstant, 256, 0)){
+		if (pDrawer){
+			pDrawer->SetSurfaceConstant(fSurfaceConstant);
+			pDrawer->ResetStep();
+		}
 	}
+	ImGui::Text("s ="); ImGui::SameLine();
+	ImGui::InputText(" ", szScaler, 256, 0); ImGui::SameLine();
+	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
+		pDrawer->SetEquation(string(szInput));
+		pDrawer->SetGridSize(fGrid);
+		pDrawer->Recalculate();
+		pDrawer->GetPolyData();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+
+	} ImGui::SameLine();
+	if (!bMovie && ImGui::Button("Reset")){
+		if (pDrawer)
+			pDrawer->ResetStep();
+		for (int i = 0; i < 3; i++)
+			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
+	}
+	ImGui::End();	
 
 	static bool show = false;
 	// 	ImGui::ShowTestWindow(&show);
@@ -510,7 +503,7 @@ void idle(){
 	glutPostRedisplay();
 }
 void reshape(int w, int h){
-	glViewport(0, nPolynomialHeight, w - nBarWidth, h - nPolynomialHeight);
+	glViewport(0, 0, w - nBarWidth, h - nPolynomialHeight);
 	nWindowWidth = w;
 	nWindowHeight = h;
 }
@@ -654,7 +647,7 @@ bool Drawer::SetSeed(float fSeed[3])
 	if (m_pMmarching)
 		return m_pMmarching->set_seed(fSeed[0], fSeed[1], fSeed[2]);
 	else
-		false;
+		return false;
 }
 
 void Drawer::SetEvaluator(Evaluator* e){
