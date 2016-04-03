@@ -229,7 +229,7 @@ bool Marching::check_constraints(float x, float y, float z){
 	bool within_constraints = true;
 	for (size_t i = 0; i < this->constraints.size(); i++){
 		if (constraints[i].valid && constraints[i].in_use){
-			float lhs = constraints[i].eval.evaluate(x, y, z);
+			float lhs = this->evaluate( &constraints[i].eval, x, y, z);
 			float rhs = constraints[i].rhs;
 			switch (this->constraints[i].op){
 			case Comp_Op::GE:
