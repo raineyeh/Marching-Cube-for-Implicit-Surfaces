@@ -1,5 +1,4 @@
-#ifndef MARCHING_531_H
-#define MARCHING_531_H
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -19,7 +18,6 @@ struct Step_Data{
 
 };
 
-
 struct Poly_Data{
 	std::vector<float> vertex_list; //xyz coords
 	std::vector<unsigned int> tri_list; //v1v2v3 list. v1v2 if it's a line
@@ -36,25 +34,59 @@ struct xyz{
 	}
 };
 
+enum Comp_Op{ GT, LT, GE, LE, NAO }; // '>', '<', '>=', '<=', not-an-operation
+
+Comp_Op parse_comp_op(string op);
+
+struct Constraint{
+	Constraint(){ in_use = valid = false; op = Comp_Op::NAO; };
+	Constraint(string l, string o, float r) :lhs(l), rhs(r){ in_use = valid = false; op = parse_comp_op(o); };
+	bool in_use;
+	bool valid;
+	string lhs;
+	Comp_Op op;
+	float rhs;
+	Evaluator eval;
+};
+
+
+
 class Marching
 {
 public:
 	Marching(void);
 	bool set_evaluator(Evaluator*);
 	bool set_grid_step_size(float);	// must be between [0.001,0.5]. Changing this will reset step in step_by_step_mode.
-	void step_by_step_mode(bool);
-	void reset_step();
 	void reset_all_data();
 	Poly_Data const * get_poly_data();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
+	
+	void step_by_step_mode(bool);
+	void reset_step();
+
 	void set_surface_constant(float); //Defines at what value the surface is drawn. Default to 0
+	
 	bool set_surface_repeat_step_distance(float); //must be positive, and best not too low, depending on grid size.
 	bool repeating_surface_mode(bool);
-    void seed_mode(bool);//this to set the seed mode to true or false 
+    
+	void seed_mode(bool);//this to set the seed mode to true or false 
 	bool set_seed(float x, float y, float z);   //reading the seeed from the UI and checking 
-	
+
+	/* set extra constraints. eg. set_extra_constraint1("z^2",">=",0.0) for the constraint z^2 >= 0.0 
+	possible values for string op are {'>', '<', '>=', '<='}
+	max number of constraint is 3*/
+	bool set_extra_constraint0(string lhs, string op, float rhs) { return set_extra_constraint(0, lhs, op, rhs); };
+	bool set_extra_constraint1(string lhs, string op, float rhs) { return set_extra_constraint(1, lhs, op, rhs); };
+	bool set_extra_constraint2(string lhs, string op, float rhs) { return set_extra_constraint(2, lhs, op, rhs); };
+	bool use_extra_constraint0(bool b){ return use_extra_constraint(0, b); };
+	bool use_extra_constraint1(bool b){ return use_extra_constraint(1, b); };
+	bool use_extra_constraint2(bool b){ return use_extra_constraint(2, b); };
+	bool use_extra_constraint(int, bool);
+	bool set_extra_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value);
+
 	bool load_poly_from_file(); //load polygonal data from file in .poly format. result can be retrieved with get_poly_data()
 	bool save_poly_to_file(); //save polygonal data to file in .poly format.
+
 
 private:
 	float evaluate(float x, float y, float z);
@@ -64,6 +96,7 @@ private:
 	void add_step_to_poly_data();
 	float interp(float, float, float, float);
 	void find_cubes_for_seeding();
+	bool check_constraints(float, float, float);
 	void print_step_info();
 
 	void get_starting_seed_grid(xyz*);  //to find where is the starting grid for the seed point 
@@ -76,6 +109,7 @@ private:
 	float surface_step;
 	bool is_repeating_surface;
 
+	vector<Constraint> constraints;
 	set<xyz> vertex_set;
 
 	bool is_seed_mode;
@@ -85,4 +119,3 @@ private:
 	set<xyz> my_seed_set;
 };
 
-#endif

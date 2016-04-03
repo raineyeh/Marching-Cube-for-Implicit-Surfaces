@@ -32,6 +32,7 @@ Marching::Marching(void){
 	this->surface_step = 0;
 	this->is_seed_mode = false;
 	seed[0] = 0; seed[1] = 0; seed[2] = 0;
+	this->constraints.resize(3);
 }
 
 void Marching::find_cubes_for_seeding()
@@ -145,6 +146,40 @@ bool Marching::repeating_surface_mode(bool b){
 	return true;
 }
 
+bool Marching::set_extra_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value){
+	if (constraint_i <0 || constraint_i > 2)
+		return false;
+
+	if (this->constraints.size() < (size_t)constraint_i + 1)
+		this->constraints.resize(constraint_i + 1);
+
+	//check operation string
+	Comp_Op op;
+	if (!compare_op.compare("<="))
+		op = Comp_Op::LE;
+	else if (!compare_op.compare(">="))
+		op = Comp_Op::GE;
+	else if (!compare_op.compare("<"))
+		op = Comp_Op::LT;
+	else if (!compare_op.compare(">"))
+		op = Comp_Op::GT;
+	else
+		return false;
+	bool set_eq_successful = this->constraints[constraint_i].eval.set_equation(constraint_lhs); 
+	if (!set_eq_successful) return false;
+
+	this->constraints[constraint_i].valid = 1;
+	this->constraints[constraint_i].lhs = constraint_lhs;
+	this->constraints[constraint_i].op = op;
+	this->constraints[constraint_i].rhs = rhs_value;
+}
+
+bool Marching::use_extra_constraint(int constraint_i, bool use){
+	if (constraint_i >= 0 && constraint_i >= this->constraints.size())
+		return false;
+	return this->constraints[constraint_i].in_use = true;
+}
+
 float Marching::evaluate(float x, float y, float z)
 {
 	if (this->evaluator) {
@@ -173,6 +208,34 @@ bool Marching::set_grid_step_size(float v){
 	}
 
 }
+
+bool Marching::check_constraints(float x, float y, float z){
+	bool within_constraints = true;
+	for (size_t i = 0; i < this->constraints.size(); i++){
+		if (constraints[i].valid && constraints[i].in_use){
+			float lhs = constraints[i].eval.evaluate(x, y, z);
+			float rhs = constraints[i].rhs;
+			switch (this->constraints[i].op){
+			case Comp_Op::GE:
+				within_constraints &= lhs >= rhs;
+				break;
+			case Comp_Op::LE:
+				within_constraints &= lhs <= rhs;
+				break;
+			case Comp_Op::GT:
+				within_constraints &= lhs > rhs;
+				break;
+			case Comp_Op::LT:
+				within_constraints &= lhs < rhs;
+				break;
+			case Comp_Op::NAO:
+				printf("Constraint incorrect\n");
+			}
+		}
+	}
+	return within_constraints;
+}
+
 
 void Marching::step_by_step_mode(bool mode){
 	this->is_step_by_step = mode;
@@ -368,8 +431,11 @@ void Marching::calculate_step(float x_0, float y_0, float z_0){
 		x_0, y_0, z_1, x_1, y_0, z_1, x_1, y_1, z_1, x_0, y_1, z_1 };
 	
 	//calculate the corner values
-	for (int i = 0; i < 8; i++)
-		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i+2]);
+	for (int i = 0; i < 8; i++){
+		if(!check_constraints(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]))
+			return;
+		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]);
+	}
 
 	//in the case that this->surface_step is set a positive value, change this->surface constant temporarily to calculate correctly.
 	float orig_surface_constant = this->surface_constant;
@@ -694,4 +760,17 @@ bool Marching::save_poly_to_file(){
 	fclose(fp);
 	return true;
 
+}
+
+Comp_Op parse_comp_op(string op){
+	if (op.compare(">"))
+		return Comp_Op::GT;
+	if (op.compare("<"))
+		return Comp_Op::LT;
+	if (op.compare(">="))
+		return Comp_Op::GE;
+	if (op.compare("<="))
+		return Comp_Op::LE;
+
+	return Comp_Op::NAO;
 }
