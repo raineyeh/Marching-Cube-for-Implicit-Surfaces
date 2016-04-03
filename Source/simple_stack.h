@@ -7,7 +7,7 @@ template<class T>
 class Simple_Stack
 {
 public:
-	Simple_Stack(){ max_size = 50; item_arr.resize(max_size); }
+	Simple_Stack(){ max_size = 50; item_arr.resize(max_size); num_items = 0; }
 
 	void push(T item){ 
 		//cout << "push " << item << endl;
@@ -22,8 +22,8 @@ public:
 		//cout << "pop " << item_arr[num_items-1] << endl;
 		num_items--; 
 
-		//if (num_items < 0)
-			//cout << "something is wrong" << endl;
+		/*if (num_items < 0)
+			cout << "something is wrong" << endl;*/
 	}
 	bool empty(){ return this->num_items == 0; }
 	T top(){ return item_arr[num_items-1]; }
