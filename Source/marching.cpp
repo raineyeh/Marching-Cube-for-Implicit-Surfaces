@@ -147,7 +147,7 @@ bool Marching::repeating_surface_mode(bool b){
 	return true;
 }
 
-bool Marching::set_extra_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value){
+bool Marching::set_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value){
 	if (constraint_i <0 || constraint_i > 2)
 		return false;
 
@@ -175,7 +175,7 @@ bool Marching::set_extra_constraint(int constraint_i, string constraint_lhs, str
 	this->constraints[constraint_i].rhs = rhs_value;
 }
 
-bool Marching::use_extra_constraint(int constraint_i, bool use){
+bool Marching::use_constraint(int constraint_i, bool use){
 	if (constraint_i >= 0 && constraint_i >= this->constraints.size())
 		return false;
 	return this->constraints[constraint_i].in_use = true;

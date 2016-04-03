@@ -75,14 +75,14 @@ public:
 	/* set extra constraints. eg. set_extra_constraint1("z^2",">=",0.0) for the constraint z^2 >= 0.0 
 	possible values for string op are {'>', '<', '>=', '<='}
 	max number of constraint is 3*/
-	bool set_extra_constraint0(string lhs, string op, float rhs) { return set_extra_constraint(0, lhs, op, rhs); };
-	bool set_extra_constraint1(string lhs, string op, float rhs) { return set_extra_constraint(1, lhs, op, rhs); };
-	bool set_extra_constraint2(string lhs, string op, float rhs) { return set_extra_constraint(2, lhs, op, rhs); };
-	bool use_extra_constraint0(bool b){ return use_extra_constraint(0, b); };
-	bool use_extra_constraint1(bool b){ return use_extra_constraint(1, b); };
-	bool use_extra_constraint2(bool b){ return use_extra_constraint(2, b); };
-	bool use_extra_constraint(int, bool);
-	bool set_extra_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value);
+	bool set_constraint0(string lhs, string op, float rhs) { return set_constraint(0, lhs, op, rhs); };
+	bool set_constraint1(string lhs, string op, float rhs) { return set_constraint(1, lhs, op, rhs); };
+	bool set_constraint2(string lhs, string op, float rhs) { return set_constraint(2, lhs, op, rhs); };
+	bool use_constraint0(bool b){ return use_constraint(0, b); };
+	bool use_constraint1(bool b){ return use_constraint(1, b); };
+	bool use_constraint2(bool b){ return use_constraint(2, b); };
+	bool use_constraint(int, bool);
+	bool set_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value);
 
 	/* set scaling factor s_x,s_y,s_z for surface f(s_x*x,s_y*y,s_z*z)=t 
 	they are default to 1.0 */
