@@ -33,6 +33,7 @@ Marching::Marching(void){
 	this->is_seed_mode = false;
 	seed[0] = 0; seed[1] = 0; seed[2] = 0;
 	this->constraints.resize(3);
+	this->scale_x = this->scale_y = this->scale_z = 1.0;
 }
 
 void Marching::find_cubes_for_seeding()
@@ -180,19 +181,22 @@ bool Marching::use_extra_constraint(int constraint_i, bool use){
 	return this->constraints[constraint_i].in_use = true;
 }
 
-float Marching::evaluate(float x, float y, float z)
-{
-	if (this->evaluator) {
+float Marching::evaluate(Evaluator* e, float x, float y, float z){
+	if (e) {
 		//return x*x + y*z ;
-		float v = this->evaluator->evaluate(x, y, z);
+		float v = e->evaluate(scale_x * x, scale_y * y, scale_z * z);
 		/*if (v==NAN || isinf(v))
-			cout << "v:" << v << " isnan"<<(v==NAN)<<"  isinf"<<isinf(v)<< endl;
-			*/
+		cout << "v:" << v << " isnan"<<(v==NAN)<<"  isinf"<<isinf(v)<< endl;
+		*/
 		return v;
 	}
 	else {
 		return 0;
 	}
+}
+
+float Marching::evaluate(float x, float y, float z){
+	return this->evaluate(this->evaluator, x, y, z);
 }
 
 bool Marching::set_grid_step_size(float v){
@@ -208,6 +212,18 @@ bool Marching::set_grid_step_size(float v){
 	}
 
 }
+
+void Marching::set_scaling_x(float s){
+	this->scale_x = s;
+}
+void Marching::set_scaling_y(float s){
+	this->scale_y = s;
+}
+void Marching::set_scaling_z(float s){
+	this->scale_z = s;
+}
+
+
 
 bool Marching::check_constraints(float x, float y, float z){
 	bool within_constraints = true;

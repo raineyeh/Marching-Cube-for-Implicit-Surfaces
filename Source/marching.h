@@ -84,12 +84,19 @@ public:
 	bool use_extra_constraint(int, bool);
 	bool set_extra_constraint(int constraint_i, string constraint_lhs, string compare_op, float rhs_value);
 
+	/* set scaling factor s_x,s_y,s_z for surface f(s_x*x,s_y*y,s_z*z)=t 
+	they are default to 1.0 */
+	void set_scaling_x(float);
+	void set_scaling_y(float);
+	void set_scaling_z(float);
+
 	bool load_poly_from_file(); //load polygonal data from file in .poly format. result can be retrieved with get_poly_data()
 	bool save_poly_to_file(); //save polygonal data to file in .poly format.
 
 
 private:
 	float evaluate(float x, float y, float z);
+	float evaluate(Evaluator* e, float x, float y, float z);
 	void calculate_step(float, float, float);
 	int add_triangle(int, int, int);
 	int add_point(float, float, float);
@@ -108,6 +115,7 @@ private:
 	float surface_constant;
 	float surface_step;
 	bool is_repeating_surface;
+	float scale_x, scale_y, scale_z;
 
 	vector<Constraint> constraints;
 	set<xyz> vertex_set;
