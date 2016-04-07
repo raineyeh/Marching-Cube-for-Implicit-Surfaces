@@ -1,11 +1,11 @@
 #pragma once
 
-#include <iostream>
+#include "evaluator.h"
 #include <vector>
 #include <tuple>
-#include "evaluator.h"
-#include <queue>
+#include <deque>
 #include <set>
+#include <math.h>
 
 struct Step_Data{
 	int step_i; //indicates which step this is at. 0~n*n: step count down. -1: finished, -2:not started
@@ -29,8 +29,22 @@ struct xyz{
 	xyz(){ x = y = z = NAN; idx = -1; };
 	xyz(float xt, float yt, float zt, int i){ x = xt; y = yt; z = zt; idx = i; };
 	xyz(float xt, float yt, float zt){ x = xt; y = yt; z = zt; idx = -1; };
+	bool close_enough(float a, float b) const { 
+		if (abs(a - b) < 0.000001) return true; 
+		else return false; 
+	}
 	bool operator<(const xyz& rhs) const{
-		return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z);
+		if (!close_enough(x, rhs.x)){
+			return x < rhs.x;
+		}
+		else if (!close_enough(y, rhs.y)){
+			return y < rhs.y;
+		}
+		else if (!close_enough(z, rhs.z)){
+			return z < rhs.z;
+		}
+		else return false;
+		//return std::tie(x, y, z) < std::tie(rhs.x, rhs.y, rhs.z); //too precise
 	}
 };
 
@@ -57,8 +71,10 @@ public:
 	Marching(void);
 	bool set_evaluator(Evaluator*);
 	bool set_grid_step_size(float);	// must be between [0.001,0.5]. Changing this will reset step in step_by_step_mode.
+	float get_grid_size(){ return this->grid_step_size; };
 	void reset_all_data();
 	Poly_Data const * get_poly_data();
+	deque<xyz> const * get_seed_queue();
 	bool recalculate(); //update poly_data. 1 step at a time if step_by_step_mode = on
 	
 	void step_by_step_mode(bool);
@@ -123,7 +139,7 @@ private:
 	bool is_seed_mode;
 	float seed[3] ;
 	//xyz seed_grid;
-	queue <xyz> seed_queue;
+	deque <xyz> seed_queue;
 	set<xyz> my_seed_set;
 };
 

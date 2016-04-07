@@ -4,8 +4,6 @@
 #include <windows.h>
 #include <iostream>
 #include <math.h>
-#include <queue>
-#include <set>
 
 
 void Marching::print_step_info(){
@@ -60,7 +58,7 @@ void Marching::find_cubes_for_seeding()
 			}
 		}
 	}
-
+	//printf("for current cube %f, %f, %f\n", x_curr, y_curr, z_curr);
 	//for each face of the cube, if there is an intersection, try to push the adjacent cube into the set
 	for (int f = 0; f < 6; f++){
 		if (!cube_face_has_intersection[f])
@@ -69,16 +67,19 @@ void Marching::find_cubes_for_seeding()
 		next_cube.x = x_curr + cube_face_normal[f][0] * grid_step_size;
 		next_cube.y = y_curr + cube_face_normal[f][1] * grid_step_size;
 		next_cube.z = z_curr + cube_face_normal[f][2] * grid_step_size;
+		next_cube.idx = poly_data.step_data.step_i;
 
 		if (next_cube.x >= -1 && (next_cube.x + this->grid_step_size) <= 1 &&
 			next_cube.y >= -1 && (next_cube.y + this->grid_step_size) <= 1 &&
 			next_cube.z >= -1 && (next_cube.z + this->grid_step_size) <= 1)
 		{
 			bool seed_set_insert_successful = my_seed_set.insert(next_cube).second;
-
+			/*printf(" %f %f %f - %x %x %x - %d \n", next_cube.x, next_cube.y, next_cube.z, 
+				*(unsigned int*)&next_cube.x, *(unsigned int*)&next_cube.y, *(unsigned int*)&next_cube.z,
+				seed_set_insert_successful);*/
 			//only push this on the queue if it has not already been on the queue
 			if (seed_set_insert_successful){
-				seed_queue.push(next_cube);
+				seed_queue.push_back(next_cube);
 			}
 		}
 	}
@@ -270,7 +271,7 @@ void Marching::reset_all_data(){
 	this->vertex_set.clear();
 	this->my_seed_set.clear();
 	while (!seed_queue.empty())
-		seed_queue.pop();
+		seed_queue.pop_front();
 	reset_step();
 }
 
@@ -298,7 +299,7 @@ bool Marching::recalculate(){
 
 			while (!seed_queue.empty())	{
 				seed_grid = seed_queue.front();
-				seed_queue.pop();
+				seed_queue.pop_front();
 				calculate_step(seed_grid.x, seed_grid.y, seed_grid.z); 
 				this->add_step_to_poly_data();
 				find_cubes_for_seeding();
@@ -323,7 +324,8 @@ bool Marching::recalculate(){
 					reset_all_data();
 
 					get_starting_seed_grid(&seed_grid);
-					seed_queue.push(seed_grid);
+					seed_grid.idx = 1;
+					//seed_queue.push_back(seed_grid);
 					my_seed_set.insert(seed_grid);
 
 					this->poly_data.step_data.step_i = 1;
@@ -334,15 +336,15 @@ bool Marching::recalculate(){
 					if (!seed_queue.empty())
 					{
 						seed_grid = seed_queue.front();
-						seed_queue.pop();
+						seed_queue.pop_front();
 						this->poly_data.step_data.step_i++;
 					}
 					else {
 						this->poly_data.step_data.step_i = 0;
 					}
+					add_step_to_poly_data();
 				}
-
-				add_step_to_poly_data();
+				
 				this->calculate_step(seed_grid.x, seed_grid.y, seed_grid.z);
 				find_cubes_for_seeding();
 
@@ -636,6 +638,10 @@ int Marching::add_triangle(int p1, int p2, int p3){
 Poly_Data const * Marching::get_poly_data(){
 	
 	return &this->poly_data;
+}
+
+deque<xyz> const * Marching::get_seed_queue(){
+	return &this->seed_queue;
 }
 
 bool Marching::load_poly_from_file(){
