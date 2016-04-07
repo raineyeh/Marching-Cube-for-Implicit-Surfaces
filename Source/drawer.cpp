@@ -22,7 +22,7 @@ using namespace std;
 int nBase = 700;
 int nPolynomialHeight = 70;
 int nWindowHeight = nBase + nPolynomialHeight;
-int nBarWidth = 380;
+int nBarWidth = 320;
 int nWindowWidth = nBase + nBarWidth;
 
 int windowID = -1;
@@ -32,13 +32,13 @@ const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char szInput[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
-static char szScaler[256] = "1.0";
 static char szSurfaceConstant[256] = "0.0";
 static float fGrid = 0.25f;
 static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
 static float fPercent;
-static float fSeeding[3];
+static float fScaler[3] = { 1.0f, 1.0f, 1.0f };
+static float fSeeding[3] = {0.8,0.8,0.9};
 static int nMovieSpeed = 5;
 static bool bStepMode,bSeedingMode, bTranslucent, bInvertFace, bRepeatingMode;
 static ImVec4 colBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
@@ -51,12 +51,18 @@ static ImVec4 colIntersectPoint = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colIntersectSurface = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
 static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
+string op[4] = { ">=", "<=", "<", ">" };
 bool bLeftPressed, bRightPressed, bHasInit, bMovie, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
 GLuint vao[4], vbo[4], ibo[4];//0 for model, 1 for cube, 2 for intersect, 3 for intersect polugon
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
+//combo
+static char szlhs1[256], szlhs2[256], szlhs3[256];
+static bool bConstraint1, bConstraint2, bConstraint3;
+static float frhs1, frhs2, frhs3;
+static int item1, item2, item3;
 // objects 
 MyFile myfile;
 Drawer* pDrawer = nullptr;
@@ -125,20 +131,19 @@ static int Movie(void*)
 }
 void DrawGUI()
 {	
-	ImGui_ImplGlut_NewFrame("Marching Cube",0.96f);
+	if (pDrawer == nullptr) return;
+	ImGui_ImplGlut_NewFrame("Marching Cube",0.5f);
 	ImVec2 wsize(nBarWidth, nWindowHeight - nPolynomialHeight);
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::SetWindowSize(wsize);
 	ImVec2 wpos(nWindowWidth - nBarWidth, nPolynomialHeight);
 	ImGui::SetWindowPos(wpos);
 	
-	if (!bMovie && ImGui::SliderFloat("2", &fGrid, 0.1f, 0.5f, "Grid size: %.2f")){
-		if (pDrawer) {
-			pDrawer->SetGridSize(fGrid);
-			pDrawer->ResetStep();
-		}			
+	if (!bMovie && ImGui::SliderFloat("Grid size", &fGrid, 0.1f, 0.5f,"%.2f")){		
+		pDrawer->SetGridSize(fGrid);
+		pDrawer->ResetStep();					
 	}
-	ImGui::SliderInt("3", &nMovieSpeed, 1, 9, "Movie speed: %.f");	
+	ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);	
 	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
 			bMovie = false;
@@ -151,8 +156,7 @@ void DrawGUI()
 		else{	
 			bStepMode = true;
 			bMovie = true;
-			bPause = false;
-			if (pDrawer == nullptr) return;
+			bPause = false;			
 			pDrawer->ResetStep();
 			pDrawer->SetStepMode(true);			
 			pDrawer->SetEquation(string(szInput));
@@ -189,12 +193,10 @@ void DrawGUI()
 		ImGui::EndPopup();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Load mesh")){
-		if (pDrawer) {
-			pDrawer->LoadFile();
-			pDrawer->ResetStep();
-			pDrawer->GetPolyData();
-		}
+	if (ImGui::Button("Load mesh")){		
+		pDrawer->LoadFile();
+		pDrawer->ResetStep();
+		pDrawer->GetPolyData();		
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
 			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
@@ -211,32 +213,27 @@ void DrawGUI()
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
-			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
-		if (pDrawer){
-			pDrawer->ResetStep();
-			pDrawer->SetStepMode(bStepMode);
-		}			
+			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
+		pDrawer->ResetStep();
+		pDrawer->SetStepMode(bStepMode);
+					
 	}
 	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
-		if (pDrawer) pDrawer->SetSeedMode(bSeedingMode);
+		pDrawer->SetSeedMode(bSeedingMode);
 	}	
-	if (!bMovie && ImGui::InputFloat3("5", fSeeding))
-	if (pDrawer) pDrawer->SetSeed(fSeeding);
-	ImGui::Text("		  Seeding point");
+	if (!bMovie && ImGui::InputFloat3("Seeding point", fSeeding,2))
+		pDrawer->SetSeed(fSeeding);
 	
-	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeatingMode)){
-		if (pDrawer){
-			pDrawer->SetRepeatingSurfaceMode(bRepeatingMode);
-			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
-			pDrawer->ResetStep();
-		}		
+	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeatingMode)){		
+		pDrawer->SetRepeatingSurfaceMode(bRepeatingMode);
+		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
+		pDrawer->ResetStep();				
 	}
-	if (!bMovie && ImGui::SliderFloat("4", &fStepDistance, 0.1f, 0.9f, "Surface repeat step distance:%.2f")){
-		if (pDrawer){
-			pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
-			pDrawer->ResetStep();
-		}
+	if (!bMovie && ImGui::SliderFloat(".", &fStepDistance, 0.1f, 0.9f,"%.2f")){				
+		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
+		pDrawer->ResetStep();
 	}
+	if (!bMovie)ImGui::Text("Surface repeat step distance");
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
 			glDisable(GL_DEPTH_TEST); 				
@@ -258,6 +255,39 @@ void DrawGUI()
 		ImGui::Text(ch);
 	}		
 
+	//Constraint1
+	if (ImGui::Checkbox("Constraint1", &bConstraint1)){
+		pDrawer->UseExtraConstraint0(bConstraint1);
+	}
+	if (ImGui::InputText("Equation1", szlhs1, 256, 0))
+		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
+	if (ImGui::Combo("operation", &item1, ">=\0<=\0<\0>\0"))
+		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
+	if (ImGui::InputFloat("Const1", &frhs1, 0.0f, 0.0f, 2))
+		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
+	
+	//Constraint2
+	if (ImGui::Checkbox("Constraint2", &bConstraint2)) {
+		pDrawer->UseExtraConstraint1(bConstraint1);
+	}
+	if (ImGui::InputText("Equation2", szlhs2, 256, 0))
+		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+	if (ImGui::Combo("operation", &item2, ">=\0<=\0<\0>\0"))
+		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+	if (ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
+		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+
+	//Constraint3
+	if (ImGui::Checkbox("Constraint3", &bConstraint3)) {
+		pDrawer->UseExtraConstraint2(bConstraint1);
+	}
+	if (ImGui::InputText("Equation3", szlhs3, 256, 0))
+		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+	if (ImGui::Combo("operation", &item3, ">=\0<=\0<\0>\0"))
+		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+	if (ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
+		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+
 	if (bRightPressed)
 		ImGui::OpenPopup("menu");
 	if (ImGui::BeginPopup("menu"))
@@ -275,7 +305,7 @@ void DrawGUI()
 		ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
 		ImGui::EndPopup();
 	}
-
+	
 	//top bar	
 	ImGui::Begin("ImGui Demo", 0.75f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
@@ -285,15 +315,17 @@ void DrawGUI()
 	ImGui::Text("P(sx,sy,sz)="); ImGui::SameLine();
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::InputText("=", szInput, 256, 0);ImGui::SameLine();	
-	if (ImGui::InputText("s", szSurfaceConstant, 256, 0)){
-		if (pDrawer){
-			pDrawer->SetSurfaceConstant(fSurfaceConstant);
-			pDrawer->ResetStep();
-		}
+	if (ImGui::InputText("s", szSurfaceConstant, 256, 0)){		
+		pDrawer->SetSurfaceConstant(fSurfaceConstant);
+		pDrawer->ResetStep();		
 	}
 	ImGui::Text("s ="); ImGui::SameLine();
-	ImGui::InputText(" ", szScaler, 256, 0); ImGui::SameLine();
-	if (!bMovie && ImGui::Button("Refresh") && pDrawer){
+	if (ImGui::InputFloat3(" ", fScaler)){		
+		pDrawer->SetScaling(fScaler);
+	}	
+	ImGui::SameLine();
+	
+	if (!bMovie && ImGui::Button("Refresh")){
 		pDrawer->SetEquation(string(szInput));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();
@@ -303,16 +335,15 @@ void DrawGUI()
 			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
 
 	} ImGui::SameLine();
-	if (!bMovie && ImGui::Button("Reset")){
-		if (pDrawer)
-			pDrawer->ResetStep();
+	if (!bMovie && ImGui::Button("Reset")){		
+		pDrawer->ResetStep();
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 	}
 	ImGui::End();	
 
-	static bool show = false;
-	// 	ImGui::ShowTestWindow(&show);
+// 	static bool show2 = true;
+// 	ImGui::ShowTestWindow(&show2);
 
 	ImGui::Render();
 	bHasInit = true;	
@@ -648,6 +679,57 @@ bool Drawer::SetSeed(float fSeed[3])
 		return m_pMmarching->set_seed(fSeed[0], fSeed[1], fSeed[2]);
 	else
 		return false;
+}
+
+void Drawer::SetScaling(float fScale[3])
+{
+	if (m_pMmarching){
+		m_pMmarching->set_scaling_x(fScale[0]);
+		m_pMmarching->set_scaling_y(fScale[1]);
+		m_pMmarching->set_scaling_z(fScale[2]);
+	}		
+}
+
+bool Drawer::SetConstraint0(string lhs, string op, float rhs)
+{
+	if (m_pMmarching)
+		return m_pMmarching->set_constraint0(lhs,  op,  rhs);
+	return false;
+}
+
+bool Drawer::SetConstraint1(string lhs, string op, float rhs)
+{
+	if (m_pMmarching)
+		return m_pMmarching->set_constraint1(lhs, op, rhs);
+	return false;
+}
+
+bool Drawer::SetConstraint2(string lhs, string op, float rhs)
+{
+	if (m_pMmarching)
+		return m_pMmarching->set_constraint2(lhs, op, rhs);
+	return false;
+}
+
+bool Drawer::UseExtraConstraint0(bool b)
+{
+	if (m_pMmarching)
+		return m_pMmarching->use_constraint0(b);
+	return false;
+}
+
+bool Drawer::UseExtraConstraint1(bool b)
+{
+	if (m_pMmarching)
+		return m_pMmarching->use_constraint1(b);
+	return false;
+}
+
+bool Drawer::UseExtraConstraint2(bool b)
+{
+	if (m_pMmarching)
+		return m_pMmarching->use_constraint2(b);
+	return false;
 }
 
 void Drawer::SetEvaluator(Evaluator* e){

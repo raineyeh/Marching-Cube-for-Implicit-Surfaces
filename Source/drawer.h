@@ -23,6 +23,13 @@ public:
 	void SaveFile();
 	void SetSeedMode(bool);
 	bool SetSeed(float[3]);
+	void SetScaling(float[3]);
+	bool SetConstraint0(string lhs, string op, float rhs);
+	bool SetConstraint1(string lhs, string op, float rhs);
+	bool SetConstraint2(string lhs, string op, float rhs);
+	bool UseExtraConstraint0(bool b);
+	bool UseExtraConstraint1(bool b);
+	bool UseExtraConstraint2(bool b);
 private:
 	Marching* m_pMmarching;
 	Evaluator* m_pEvaluator;	
