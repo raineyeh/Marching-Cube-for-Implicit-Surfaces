@@ -19,12 +19,11 @@
 using namespace std;
 
 /* Window information */
-int nBase = 700;
 int nPolynomialHeight = 70;
-int nWindowHeight = nBase + nPolynomialHeight;
 int nBarWidth = 320;
-int nWindowWidth = nBase + nBarWidth;
-
+int nBase;
+int nWindowHeight;
+int nWindowWidth;
 int windowID = -1;
 float nColor = 48;
 /* Data information */
@@ -210,18 +209,26 @@ void DrawGUI()
 		}
 		ImGui::EndPopup();
 	}
+	if (ImGui::Checkbox("Translucent", &bTranslucent)){
+		if (bTranslucent){
+			glDisable(GL_DEPTH_TEST);
+		}
+		else{
+			glEnable(GL_DEPTH_TEST);
+		}
+		ModelShader.setUniform("uTranslucent", bTranslucent);
+	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 		pDrawer->ResetStep();
-		pDrawer->SetStepMode(bStepMode);
-					
+		pDrawer->SetStepMode(bStepMode);					
 	}
 	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
 		pDrawer->SetSeedMode(bSeedingMode);
 	}	
-	if (!bMovie && ImGui::InputFloat3("Seeding point", fSeeding,2))
+	if (!bMovie && bSeedingMode && ImGui::InputFloat3("Seeding point", fSeeding, 2))
 		pDrawer->SetSeed(fSeeding);
 	
 	if (!bMovie && ImGui::Checkbox("Repeating surface mode", &bRepeatingMode)){		
@@ -229,21 +236,12 @@ void DrawGUI()
 		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 		pDrawer->ResetStep();				
 	}
-	if (!bMovie && ImGui::SliderFloat(".", &fStepDistance, 0.1f, 0.9f,"%.2f")){				
+	if (!bMovie && bRepeatingMode && ImGui::SliderFloat(".", &fStepDistance, 0.1f, 0.9f, "%.2f")){
 		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 		pDrawer->ResetStep();
 	}
-	if (!bMovie)ImGui::Text("Surface repeat step distance");
-	if (ImGui::Checkbox("Translucent", &bTranslucent)){
-		if (bTranslucent){
-			glDisable(GL_DEPTH_TEST); 				
-		}
-			
-		else{
-			glEnable(GL_DEPTH_TEST);						
-		}			
-		ModelShader.setUniform("uTranslucent", bTranslucent);
-	}	
+	if (!bMovie && bRepeatingMode)ImGui::Text("Surface repeat step distance");
+	
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
@@ -256,36 +254,36 @@ void DrawGUI()
 	}		
 
 	//Constraint1
-	if (ImGui::Checkbox("Constraint1", &bConstraint1)){
+	if (!bMovie && ImGui::Checkbox("Constraint1", &bConstraint1)){
 		pDrawer->UseExtraConstraint0(bConstraint1);
 	}
-	if (ImGui::InputText("Equation1", szlhs1, 256, 0))
+	if (!bMovie && bConstraint1 && ImGui::InputText("Equation1", szlhs1, 256, 0))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
-	if (ImGui::Combo("operation", &item1, ">=\0<=\0<\0>\0"))
+	if (!bMovie && bConstraint1 && ImGui::Combo("operation", &item1, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
-	if (ImGui::InputFloat("Const1", &frhs1, 0.0f, 0.0f, 2))
+	if (!bMovie && bConstraint1 && ImGui::InputFloat("Const1", &frhs1, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
 	
 	//Constraint2
-	if (ImGui::Checkbox("Constraint2", &bConstraint2)) {
+	if (!bMovie && ImGui::Checkbox("Constraint2", &bConstraint2)) {
 		pDrawer->UseExtraConstraint1(bConstraint1);
 	}
-	if (ImGui::InputText("Equation2", szlhs2, 256, 0))
+	if (!bMovie && bConstraint2 && ImGui::InputText("Equation2", szlhs2, 256, 0))
 		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
-	if (ImGui::Combo("operation", &item2, ">=\0<=\0<\0>\0"))
+	if (!bMovie && bConstraint2 && ImGui::Combo("operation", &item2, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
-	if (ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
+	if (!bMovie && bConstraint2 && ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
 
 	//Constraint3
-	if (ImGui::Checkbox("Constraint3", &bConstraint3)) {
+	if (!bMovie && ImGui::Checkbox("Constraint3", &bConstraint3)) {
 		pDrawer->UseExtraConstraint2(bConstraint1);
 	}
-	if (ImGui::InputText("Equation3", szlhs3, 256, 0))
+	if (!bMovie && bConstraint3 && ImGui::InputText("Equation3", szlhs3, 256, 0))
 		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
-	if (ImGui::Combo("operation", &item3, ">=\0<=\0<\0>\0"))
+	if (!bMovie && bConstraint3 && ImGui::Combo("operation", &item3, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
-	if (ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
+	if (!bMovie && bConstraint3 && ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
 
 	if (bRightPressed)
@@ -533,7 +531,7 @@ void mouse(int button, int state, int x, int y)
 void idle(){
 	glutPostRedisplay();
 }
-void reshape(int w, int h){
+void reshape(int w, int h){	
 	glViewport(0, 0, w - nBarWidth, h - nPolynomialHeight);
 	nWindowWidth = w;
 	nWindowHeight = h;
@@ -567,8 +565,13 @@ Drawer::Drawer(int* argc, char** argv){
 	/* Initialize the GLUT window */
 	glutInit(argc, argv);
 	
+	int nResX = GetSystemMetrics(SM_CXSCREEN);
+	int nResY = GetSystemMetrics(SM_CYSCREEN);	
+	nWindowHeight = nResY - 100;
+	nBase = nWindowHeight - nPolynomialHeight;	
+	nWindowWidth = nBase + nBarWidth;
 	glutInitWindowSize(nWindowWidth, nWindowHeight);
-	glutInitWindowPosition(30, 30);
+	glutInitWindowPosition((nResX - nWindowWidth)/2, 0);
 	glutSetOption(GLUT_MULTISAMPLE, 4); //Set number of samples per pixel
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 	windowID = glutCreateWindow("Marching Cube");
