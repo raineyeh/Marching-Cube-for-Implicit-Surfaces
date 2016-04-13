@@ -219,6 +219,7 @@ void DrawGUI()
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
+		pDrawer->SetEquation(string(szInput));
 		pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
@@ -480,7 +481,7 @@ void special(int key, int x, int y){
 	case GLUT_KEY_RIGHT:
 		if (pData == nullptr) break;
 		if (pDrawer) {
-			pDrawer->SetEquation(string(szInput));
+		
 
 			if (bCubeStep){
 				nCubeStep++;
