@@ -54,7 +54,7 @@ string op[4] = { ">=", "<=", "<", ">" };
 bool bLeftPressed, bRightPressed, bHasInit, bMovie, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
-GLuint vao[4], vbo[4], ibo[4];//0 for model, 1 for cube, 2 for intersect, 3 for intersect polugon
+GLuint vao[4], vbo[4], ibo[4];//0 for model, 1 for cube, 2 for intersect, 3 for intersect polygon
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
 //combo
@@ -77,9 +77,9 @@ enum CubeStates{
 	INTERSECTIONS,
 	POLYGON
 };
-void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){	
-	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);
+void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){
 	glNamedBufferData(ibo, ni, pi, GL_DYNAMIC_DRAW);
+	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);	
 }
 void SetStepData(){
 	if (pData == nullptr) return;
@@ -226,6 +226,12 @@ void DrawGUI()
 		pDrawer->ResetStep();
 		pDrawer->SetStepMode(bStepMode);					
 	}
+	if (!bSeedingMode && bStepMode){
+		char ch[20] = { 0 };
+		if (pData && bStepMode && pData->step_data.step_i >= 0)
+			sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
+		ImGui::Text(ch);
+	}
 	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
 		pDrawer->SetSeedMode(bSeedingMode);
 	}	
@@ -247,12 +253,7 @@ void DrawGUI()
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
 	}		  
-	if (!bSeedingMode){
-		char ch[20] = { 0 };
-		if (pData && bStepMode && pData->step_data.step_i >= 0)
-			sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
-		ImGui::Text(ch);
-	}		
+			
 
 	//Constraint1
 	if (!bMovie && ImGui::Checkbox("Constraint1", &bConstraint1)){
@@ -421,12 +422,15 @@ void DrawCube(){
 	}
 	glDepthMask(true);
 	
-
-	//polygon
-	if (nCubeStep > 2){
-		ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, 1.0f));
-		ModelShader.setUniform("uBackColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, colModelBackFace.w));
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, pData->step_data.intersect_coord.size() / 3);
+	//polygon	
+	if (pData->step_data.tri_vlist.size() > 0){	
+		BufferData(ibo[2], pData->step_data.tri_vlist.size()*sizeof(unsigned int), (void*)&pData->step_data.tri_vlist[0], 0, 0, 0);//修改数据后要bind
+		glBindVertexArray(vao[2]);
+		if (nCubeStep > 2){
+			ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, 1.0f));
+			ModelShader.setUniform("uBackColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, colModelBackFace.w));
+			glDrawElements(GL_TRIANGLES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
+		}
 	}
 	glBindVertexArray(0);	
 }
@@ -557,7 +561,7 @@ void InitMatrix(){
 	P = glm::perspective(45.0f, 1.0f, 0.1f, 100.0f);	
 }
 void InitBuffer(){	
-	for (int i = 0; i < 4;i++){
+	for (int i = 0; i < 3;i++){
 		CreateBuffer(ModelShader.getProgram(),vao[i],vbo[i],ibo[i]);
 	}	
 }
