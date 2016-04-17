@@ -16,7 +16,6 @@
     <ClCompile Include="..\..\Source\main.cpp" />
     <ClCompile Include="..\..\Source\marching.cpp" />
     <ClCompile Include="..\..\Source\MyFile.cpp" />
-    <ClCompile Include="..\..\Source\tinycthread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\drawer.h" />
@@ -26,9 +25,9 @@
     <ClInclude Include="..\..\Source\marching.h" />
     <ClInclude Include="..\..\Source\marching_lookup.h" />
     <ClInclude Include="..\..\Source\MyFile.h" />
+    <ClInclude Include="..\..\Source\normal.h" />
     <ClInclude Include="..\..\Source\ShaderLib.h" />
     <ClInclude Include="..\..\Source\simple_stack.h" />
-    <ClInclude Include="..\..\Source\tinycthread.h" />
     <ClInclude Include="..\..\Source\vao.h" />
   </ItemGroup>
   <ItemGroup>

@@ -13,9 +13,11 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "ShaderLib.h"
-#include "tinycthread.h"
+//#include "tinycthread.h"
 #include "vao.h"
 #include "MyFile.h"
+#include <thread>
+
 using namespace std;
 
 /* Window information */
@@ -37,13 +39,13 @@ static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
 static float fPercent;
 static float fScaler[3] = { 1.0f, 1.0f, 1.0f };
-static float fSeeding[3] = {0.8,0.8,0.9};
+static float fSeeding[3] = {0.8f,0.8f,0.9f};
 static int nMovieSpeed = 5;
 static bool bStepMode,bSeedingMode, bTranslucent, bInvertFace, bRepeatingMode;
 static ImVec4 colBackground = ImColor(1.0f, 1.0f,1.0f, 1.0f);
 static ImVec4 colModelFrontFace = ImColor(1.0f, 0.3f, 0.3f, 1.0f);
-static ImVec4 colModelBackFace = ImColor(0.2f, 0.2f, 0.2f, 0.5f);
-static ImVec4 colCubeSurface = ImColor(0.0f, 0.0f, 1.0f, 0.5f);
+static ImVec4 colModelBackFace = ImColor(0.5f, 0.5f, 0.5f, 1.0f);
+static ImVec4 colCubeSurface = ImColor(0.7f, 0.7f, 0.7f, 0.5f);
 static ImVec4 colCubeEdge = ImColor(1.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colModelEdge = ImColor(0.0f, 0.0f,0.0f, 1.0f);
 static ImVec4 colIntersectPoint = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
@@ -54,7 +56,7 @@ string op[4] = { ">=", "<=", "<", ">" };
 bool bLeftPressed, bRightPressed, bHasInit, bMovie, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
-GLuint vao[4], vbo[4], ibo[4];//0 for model, 1 for cube, 2 for intersect, 3 for intersect polygon
+GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
 //combo
@@ -66,17 +68,12 @@ static int item1, item2, item3;
 MyFile myfile;
 Drawer* pDrawer = nullptr;
 ShaderLib ModelShader;
-thrd_t MovieThread;
+thread movie;
+
 //cube idx
 unsigned int idxCube[36] = { 1, 0, 2, 2, 0, 3, 0, 5, 4, 5, 0, 1, 1, 6, 5, 6, 1, 2, 2, 7, 6, 7, 2, 3,3, 0, 7, 0, 4, 7, 4, 5, 6, 6, 7, 4 };
 unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 3, 7, 4, 4, 5, 1, 0, 4, 7, 3, 2, 6, 7 };
-//states
-enum CubeStates{
-	GRID = 0,
-	CORNERPOINT,
-	INTERSECTIONS,
-	POLYGON
-};
+
 void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){
 	glNamedBufferData(ibo, ni, pi, GL_DYNAMIC_DRAW);
 	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);	
@@ -100,7 +97,7 @@ void SetStepData(){
 	}
 }
 
-static int Movie(void*)
+static int Movie()
 {		
 	if (pDrawer == nullptr) return false;
 	if (pData == nullptr) return false;
@@ -128,6 +125,7 @@ static int Movie(void*)
 	_endthread();	
 	return true;
 }
+
 void DrawGUI()
 {	
 	if (pDrawer == nullptr) return;
@@ -146,9 +144,8 @@ void DrawGUI()
 	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
 		if (bMovie){
 			bMovie = false;
-			bPause = false;
-			thrd_join(MovieThread, NULL);
-			MovieThread = 0;
+			bPause = false;		
+			movie.join();
 			for (int i = 0; i < 3; i++)
 				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);									
 		}
@@ -162,7 +159,7 @@ void DrawGUI()
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
-			thrd_create(&MovieThread, Movie, NULL);				
+			movie = thread(Movie);		
 		}		
 	}
 	if (bMovie){
@@ -174,8 +171,7 @@ void DrawGUI()
 				bPause = true;			
 		}
 	}	
-	ImGui::SameLine();
-	
+	ImGui::SameLine();	
 	if (ImGui::Button("Save mesh")){
 		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
 			ImGui::OpenPopup("Save error");	
@@ -195,10 +191,10 @@ void DrawGUI()
 	if (ImGui::Button("Load mesh")){		
 		pDrawer->LoadFile();
 		pDrawer->ResetStep();
-		pDrawer->GetPolyData();		
+		pDrawer->GetPolyData();			
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+						vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
 		else ImGui::OpenPopup("Load error");
 	}
 	if (ImGui::BeginPopupModal("Load error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
@@ -212,9 +208,11 @@ void DrawGUI()
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
 			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
 		}
 		else{
 			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
 		}
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
@@ -252,8 +250,7 @@ void DrawGUI()
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
-	}		  
-			
+	}		  			
 
 	//Constraint1
 	if (!bMovie && ImGui::Checkbox("Constraint1", &bConstraint1)){
@@ -305,7 +302,11 @@ void DrawGUI()
 		ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
 		ImGui::EndPopup();
 	}
-	
+	static float uLightPosX = 0;
+	if(ImGui::SliderFloat("light", &uLightPosX, -10.0f, 10.0f)){
+		ModelShader.setUniform("uLightPos", uLightPosX);
+	}	
+
 	//top bar	
 	ImGui::Begin("ImGui Demo", 0.75f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
@@ -329,11 +330,10 @@ void DrawGUI()
 		pDrawer->SetEquation(string(szInput));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();
-		pDrawer->GetPolyData();
+		pDrawer->GetPolyData();		
 		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
-
+					   vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
 	} ImGui::SameLine();
 	if (!bMovie && ImGui::Button("Reset")){		
 		pDrawer->ResetStep();
@@ -341,10 +341,8 @@ void DrawGUI()
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
 	}
 	ImGui::End();	
-
 // 	static bool show2 = true;
 // 	ImGui::ShowTestWindow(&show2);
-
 	ImGui::Render();
 	bHasInit = true;	
 }
@@ -387,16 +385,19 @@ void DrawCube(){
 	if (pData->step_data.corner_coords.empty()) return;		
 	
 	SetStepData();	
-
+	
 	//cube	
+	glEnable(GL_BLEND);
 	glDepthMask(false);	
 	BufferData(ibo[1], sizeof(idxCube), idxCube, 0, 0, 0);//修改数据后要bind
 	ModelShader.setUniform("uFrontColor", glm::vec4(colCubeSurface.x, colCubeSurface.y, colCubeSurface.z, 0.5f));
+	ModelShader.setUniform("uBackColor", glm::vec4(colCubeSurface.x, colCubeSurface.y, colCubeSurface.z, 0.5f));
 	glBindVertexArray(vao[1]);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	glDepthMask(true);
-	
+	glDisable(GL_BLEND);
+
 	//edge	
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
 	ModelShader.setUniform("uFrontColor", glm::vec4(colCubeEdge.x, colCubeEdge.y, colCubeEdge.z, 1.0f));
@@ -441,11 +442,12 @@ void DrawModel(){
 	glBindVertexArray(vao[0]); 	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelFrontFace.x, colModelFrontFace.y, colModelFrontFace.z, bTranslucent ? 0.5f : 1.0f));
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelBackFace.x, colModelBackFace.y, colModelBackFace.z, colModelBackFace.w));
-	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size()-2)*3, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
 
 	glLineWidth(3);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
+	ModelShader.setUniform("uBackColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
 	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -562,7 +564,7 @@ void InitMatrix(){
 }
 void InitBuffer(){	
 	for (int i = 0; i < 3;i++){
-		CreateBuffer(ModelShader.getProgram(),vao[i],vbo[i],ibo[i]);
+		CreateBuffer(ModelShader.getProgram(), vao[i], vbo[i], ibo[i]);
 	}	
 }
 Drawer::Drawer(int* argc, char** argv){
@@ -584,10 +586,10 @@ Drawer::Drawer(int* argc, char** argv){
 	glewInit();
 	ImGui_ImplGlut_Init();
 	CompileAndLinkShader();
-	glEnable(GL_BLEND);
+
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_MULTISAMPLE);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+ 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	glPointSize(8.0);		
 //	glCullFace()//剔除面

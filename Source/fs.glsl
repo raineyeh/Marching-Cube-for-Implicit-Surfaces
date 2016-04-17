@@ -5,12 +5,12 @@ uniform vec4 uFrontColor;
 uniform vec4 uBackColor;   
 
 void main(void)
-{   	
-	if( gl_FrontFacing ){
-		fragcolor = uFrontColor;
+{   		
+	if( gl_FrontFacing ){	
+		fragcolor = uFrontColor ;
 	} 
 	else {
-		fragcolor = uBackColor;
+		fragcolor = uBackColor ;
 	}	
 }
 

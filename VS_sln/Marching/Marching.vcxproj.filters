@@ -30,9 +30,6 @@
     <ClCompile Include="..\..\Source\MyFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\tinycthread.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\marching.h">
@@ -53,9 +50,6 @@
     <ClInclude Include="..\..\Source\MyFile.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\tinycthread.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\ShaderLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,6 +60,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Source\imgui_impl_glut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Source\normal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
