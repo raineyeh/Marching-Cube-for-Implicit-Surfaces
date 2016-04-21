@@ -30,10 +30,9 @@ float nColor = 48;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char szInput[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
-static char szSurfaceConstant[256] = "0.0";
+static char szEquation[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
 static float fGrid = 0.2f;
-static float fSurfaceConstant = 0.2f;
+static float fSurfaceConstant = 0.0f;
 static float fStepDistance = 0.5f;
 static float fPercent;
 static float fScaler[3] = { 1.1f, 1.1f, 1.1f };
@@ -154,7 +153,7 @@ void DrawGUI()
 			bPause = false;			
 			pDrawer->ResetStep();
 			pDrawer->SetStepMode(true);			
-			pDrawer->SetEquation(string(szInput));
+			pDrawer->SetEquation(string(szEquation));
 			pDrawer->SetGridSize(fGrid);
 			pDrawer->Recalculate();
 			pDrawer->GetPolyData();
@@ -220,7 +219,7 @@ void DrawGUI()
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
-		pDrawer->SetEquation(string(szInput));
+		pDrawer->SetEquation(string(szEquation));
 		pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
@@ -245,12 +244,12 @@ void DrawGUI()
 		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 		pDrawer->ResetStep();				
 	}
-	if (!bMovie && bRepeatingMode && ImGui::SliderFloat(".", &fStepDistance, 0.1f, 0.9f, "%.2f")){
+/*	if (!bMovie && bRepeatingMode && ImGui::SliderFloat(".", &fStepDistance, 0.1f, 0.9f, "%.2f")){
 		pDrawer->SetSurfaceRepeatStepDistance(fStepDistance);
 		pDrawer->ResetStep();
 	}
 	if (!bMovie && bRepeatingMode)ImGui::Text("Surface repeat step distance");
-	
+*/	
 	if (bMovie){
 		ImVec2 psize(nBarWidth, 30);
 		ImGui::ProgressBar(fPercent, psize);
@@ -316,8 +315,8 @@ void DrawGUI()
 	ImGui::SetWindowPos(ppos);
 	ImGui::Text("P(sx,sy,sz)="); ImGui::SameLine();
 	ImGui::SetWindowFontScale(1.5);
-	ImGui::InputText("=", szInput, 256, 0);ImGui::SameLine();	
-	if (ImGui::InputText("s", szSurfaceConstant, 256, 0)){		
+	ImGui::InputText("=", szEquation, 256, 0);ImGui::SameLine();	
+	if (ImGui::InputFloat("s", &fSurfaceConstant, 0.0f, 0.0f, 2)){
 		pDrawer->SetSurfaceConstant(fSurfaceConstant);
 		pDrawer->ResetStep();		
 	}
@@ -328,7 +327,7 @@ void DrawGUI()
 	ImGui::SameLine();
 	
 	if (!bMovie && ImGui::Button("Refresh")){
-		pDrawer->SetEquation(string(szInput));
+		pDrawer->SetEquation(string(szEquation));
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();
 		pDrawer->GetPolyData();		
@@ -467,6 +466,15 @@ void display()
 
 void keyboard(unsigned char key, int x, int y){
 	ImGui_ImplGlut_KeyCallback(key);	
+	if (pDrawer && key == '\r'){
+		pDrawer->SetEquation(string(szEquation));
+		pDrawer->SetGridSize(fGrid);
+		pDrawer->Recalculate();
+		pDrawer->GetPolyData();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+	}
 }
 
 void keyboard_up(unsigned char key, int x, int y){
