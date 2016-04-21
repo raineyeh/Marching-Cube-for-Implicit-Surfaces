@@ -58,6 +58,7 @@ void Marching::find_cubes_for_seeding()
 			}
 		}
 	}
+
 	//printf("for current cube %f, %f, %f\n", x_curr, y_curr, z_curr);
 	//for each face of the cube, if there is an intersection, try to push the adjacent cube into the set
 	for (int f = 0; f < 6; f++){
@@ -69,9 +70,9 @@ void Marching::find_cubes_for_seeding()
 		next_cube.z = z_curr + cube_face_normal[f][2] * grid_step_size;
 		next_cube.idx = poly_data.step_data.step_i;
 
-		if (next_cube.x >= -1 && (next_cube.x + this->grid_step_size) <= 1 &&
-			next_cube.y >= -1 && (next_cube.y + this->grid_step_size) <= 1 &&
-			next_cube.z >= -1 && (next_cube.z + this->grid_step_size) <= 1)
+		if (next_cube.x >= -1 - 0.5*this->grid_step_size && (next_cube.x + 0.5*this->grid_step_size) <= 1 &&
+			next_cube.y >= -1 - 0.5*this->grid_step_size && (next_cube.y + 0.5*this->grid_step_size) <= 1 &&
+			next_cube.z >= -1 - 0.5*this->grid_step_size && (next_cube.z + 0.5*this->grid_step_size) <= 1)
 		{
 			bool seed_set_insert_successful = my_seed_set.insert(next_cube).second;
 			/*printf(" %f %f %f - %x %x %x - %d \n", next_cube.x, next_cube.y, next_cube.z, 
@@ -84,22 +85,20 @@ void Marching::find_cubes_for_seeding()
 		}
 	}
 
+
 }//end of procedure 
 
 void Marching::get_starting_seed_grid( xyz* seed_grid)
 {   
-	float dx = ((seed[0] - (-1)) / grid_step_size);
+	float dx = ((seed[0]/scale_x - (-1)) / grid_step_size);
 	//seed_grid.x = -1 + floor(dx)*grid_step_size;
 	seed_grid->x = -1 + floor(dx)*grid_step_size;
-	//seed_grid.x1 = seed_grid.x0 + grid_step_size;
-	float dy = ((seed[1] - (-1)) / grid_step_size);
+	float dy = ((seed[1] /scale_y - (-1)) / grid_step_size);
 	//seed_grid.y = -1+floor(dy)*grid_step_size;
 	seed_grid->y = -1 + floor(dy)*grid_step_size;
-	//seed_grid.y1 = seed_grid.y0 + grid_step_size;
-	float dz = ((seed[2] - (-1)) / grid_step_size);
+	float dz = ((seed[2]/ scale_z - (-1)) / grid_step_size);
 	//seed_grid.z = -1+floor(dz)*grid_step_size;
 	seed_grid->z = -1 + floor(dz)*grid_step_size;
-	//seed_grid.z1 = seed_grid.z0 + grid_step_size;
 	//cout <<"get_grid"<< seed_grid.x0 << "  " << seed_grid.y0 << "  " << seed_grid.z0 << endl;
 }
 
@@ -357,10 +356,11 @@ bool Marching::recalculate(){
 			reset_all_data();
 			
 			float x_0, y_0, z_0;
-
-			for (z_0 = -1.0; z_0 < 1.0; z_0 += this->grid_step_size) {
-				for (y_0 = -1.0; y_0 < 1.0; y_0 += this->grid_step_size) {
-					for (x_0 = -1.0; x_0 < 1.0; x_0 += this->grid_step_size) {
+			float lower_bound = -1.0 - this->grid_step_size;
+			float upper_bound = 1.0 + 0.5* this->grid_step_size;
+			for (z_0 = lower_bound; z_0 <= upper_bound; z_0 += this->grid_step_size) {
+				for (y_0 = lower_bound; y_0 <= upper_bound; y_0 += this->grid_step_size) {
+					for (x_0 = lower_bound; x_0 <= upper_bound; x_0 += this->grid_step_size) {
 
 						this->calculate_step(x_0, y_0, z_0);
 						this->add_step_to_poly_data();
