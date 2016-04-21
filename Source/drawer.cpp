@@ -3,6 +3,7 @@
 #include "imgui_impl_glut.h" 
 #include <algorithm>
 #include <memory> 
+#include <thread>
 #include <process.h> 
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -13,11 +14,8 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "ShaderLib.h"
-//#include "tinycthread.h"
 #include "vao.h"
 #include "MyFile.h"
-#include <thread>
-
 using namespace std;
 
 /* Window information */
@@ -34,11 +32,11 @@ static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
 static char szInput[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
 static char szSurfaceConstant[256] = "0.0";
-static float fGrid = 0.25f;
+static float fGrid = 0.2f;
 static float fSurfaceConstant = 0.2f;
 static float fStepDistance = 0.5f;
 static float fPercent;
-static float fScaler[3] = { 1.0f, 1.0f, 1.0f };
+static float fScaler[3] = { 1.1f, 1.1f, 1.1f };
 static float fSeeding[3] = {0.8f,0.8f,0.9f};
 static int nMovieSpeed = 5;
 static bool bStepMode,bSeedingMode, bTranslucent, bInvertFace, bRepeatingMode;
@@ -56,6 +54,7 @@ string op[4] = { ">=", "<=", "<", ">" };
 bool bLeftPressed, bRightPressed, bHasInit, bMovie, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
+int nLineWidth = 3;
 GLuint vao[3], vbo[3], ibo[3];//0 for model, 1 for cube, 2 for intersect
 glm::mat4 M,V,P;
 vector<float> vIntersectVertex, vIntersectIndex;
@@ -136,7 +135,7 @@ void DrawGUI()
 	ImVec2 wpos(nWindowWidth - nBarWidth, nPolynomialHeight);
 	ImGui::SetWindowPos(wpos);
 	
-	if (!bMovie && ImGui::SliderFloat("Grid size", &fGrid, 0.1f, 0.5f,"%.2f")){		
+	if (!bMovie && ImGui::SliderFloat("Grid size", &fGrid, 0.01f, 0.5f,"%.2f")){		
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->ResetStep();					
 	}
@@ -207,13 +206,17 @@ void DrawGUI()
 	}
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
-			glDisable(GL_DEPTH_TEST);
+			glDisable(GL_DEPTH_TEST);			
 			glEnable(GL_BLEND);
+			colModelFrontFace.w = 0.5f;
+			nLineWidth = 1;
 		}
 		else{
 			glEnable(GL_DEPTH_TEST);
 			glDisable(GL_BLEND);
-		}
+			colModelFrontFace.w = 1.0f;
+			nLineWidth = 3;
+		}		
 		ModelShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (!bMovie && ImGui::Checkbox("Step mode", &bStepMode)){
@@ -232,6 +235,7 @@ void DrawGUI()
 	}
 	if (!bMovie && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
 		pDrawer->SetSeedMode(bSeedingMode);
+		pDrawer->SetSeed(fSeeding);
 	}	
 	if (!bMovie && bSeedingMode && ImGui::InputFloat3("Seeding point", fSeeding, 2))
 		pDrawer->SetSeed(fSeeding);
@@ -302,10 +306,7 @@ void DrawGUI()
 		ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
 		ImGui::EndPopup();
 	}
-	static float uLightPosX = 0;
-	if(ImGui::SliderFloat("light", &uLightPosX, -10.0f, 10.0f)){
-		ModelShader.setUniform("uLightPos", uLightPosX);
-	}	
+	
 
 	//top bar	
 	ImGui::Begin("ImGui Demo", 0.75f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
@@ -348,8 +349,7 @@ void DrawGUI()
 }
 glm::vec3 GetArcballVector(int x, int y) {
 	glm::vec3 P = glm::vec3(1.0*x / nWindowWidth * 2 - 1.0,
-		1.0*y / nWindowHeight * 2 - 1.0,
-		0);//屏幕坐标系变为[-1,1]
+		1.0*y / nWindowHeight * 2 - 1.0,0);//屏幕坐标系变为[-1,1]
 	P.y = -P.y;
 	float OP_squared = P.x * P.x + P.y * P.y;
 	if (OP_squared <= 1 * 1)
@@ -396,7 +396,8 @@ void DrawCube(){
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	glDepthMask(true);
-	glDisable(GL_BLEND);
+	if (!bTranslucent)
+		glDisable(GL_BLEND);
 
 	//edge	
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
@@ -444,7 +445,7 @@ void DrawModel(){
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelBackFace.x, colModelBackFace.y, colModelBackFace.z, colModelBackFace.w));
 	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
 
-	glLineWidth(3);
+	glLineWidth(nLineWidth);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
@@ -487,8 +488,6 @@ void special(int key, int x, int y){
 	case GLUT_KEY_RIGHT:
 		if (pData == nullptr) break;
 		if (pDrawer) {
-		
-
 			if (bCubeStep){
 				nCubeStep++;
 				if (nCubeStep == 4) {
@@ -608,7 +607,7 @@ Drawer::Drawer(int* argc, char** argv){
 	InitBuffer();
 	glClearColor(colBackground.x, colBackground.y, colBackground.z, 1.0f);
 	GetPolyData();
-	assert(pData);
+	assert(pData);	
 	m_pEvaluator = nullptr;
 	m_pMmarching = nullptr;		
 }
@@ -638,6 +637,7 @@ void Drawer::start(){
 	/* Start the main GLUT loop */
 	/* NOTE: No code runs after this */	
 	pDrawer = this;
+	SetScaling(fScaler);
 	glutMainLoop();	
 }
 
