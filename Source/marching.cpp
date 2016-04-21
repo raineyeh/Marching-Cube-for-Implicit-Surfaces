@@ -179,7 +179,7 @@ bool Marching::set_constraint(int constraint_i, string constraint_lhs, string co
 bool Marching::use_constraint(int constraint_i, bool use){
 	if (constraint_i >= 0 && constraint_i >= this->constraints.size())
 		return false;
-	return this->constraints[constraint_i].in_use = true;
+	return this->constraints[constraint_i].in_use = use;
 }
 
 float Marching::evaluate(Evaluator* e, float x, float y, float z){
