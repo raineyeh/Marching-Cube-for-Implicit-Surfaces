@@ -175,6 +175,21 @@ void DrawGUI()
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->ResetStep();					
 	}
+	if (!bMovieMode && ImGui::Checkbox("Translucent", &bTranslucent)){
+		if (bTranslucent){
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			colModelFrontFace.w = 0.5f;
+			nLineWidth = 1;
+		}
+		else{
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+			colModelFrontFace.w = 1.0f;
+			nLineWidth = 3;
+		}
+		ModelShader.setUniform("uTranslucent", bTranslucent);
+	}
 	
 	if (!bMovieMode)ImGui::Separator();
 	if (!bMovieMode && ImGui::Button("Movie mode")){
@@ -216,7 +231,7 @@ void DrawGUI()
 	}
 	
 	if (bMovieMode)ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);		
-	if (ImGui::Checkbox("Translucent", &bTranslucent)){
+	if (bMovieMode && ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
 			glDisable(GL_DEPTH_TEST);
 			glEnable(GL_BLEND);
@@ -255,40 +270,40 @@ void DrawGUI()
 		pDrawer->SetSeed(fSeeding);
 
 	//Constraint1
-	if (!bMovieMode && ImGui::Checkbox("Constraint1", &bConstraint1)){
+	if (!bMovieMode && ImGui::Checkbox("Constraint 1", &bConstraint1)){
 		pDrawer->UseExtraConstraint0(bConstraint1);
 	}
 	if (!bMovieMode && bConstraint1 && ImGui::InputText("Equation1", szlhs1, 256, 0))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
-	if (!bMovieMode && bConstraint1 && ImGui::Combo("operation", &item1, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint1 && ImGui::Combo("operation1", &item1, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
 	if (!bMovieMode && bConstraint1 && ImGui::InputFloat("Const1", &frhs1, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
 	
 	//Constraint2
-	if (!bMovieMode && ImGui::Checkbox("Constraint2", &bConstraint2)) {
+	if (!bMovieMode && ImGui::Checkbox("Constraint 2", &bConstraint2)) {
 		pDrawer->UseExtraConstraint1(bConstraint2);
 	}
 	if (!bMovieMode && bConstraint2 && ImGui::InputText("Equation2", szlhs2, 256, 0))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
-	if (!bMovieMode && bConstraint2 && ImGui::Combo("operation", &item2, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint2 && ImGui::Combo("operation2", &item2, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 	if (!bMovieMode && bConstraint2 && ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 
 	//Constraint3
-	if (!bMovieMode && ImGui::Checkbox("Constraint3", &bConstraint3)) {
+	if (!bMovieMode && ImGui::Checkbox("Constraint 3", &bConstraint3)) {
 		pDrawer->UseExtraConstraint2(bConstraint3);
 	}
 	if (!bMovieMode && bConstraint3 && ImGui::InputText("Equation3", szlhs3, 256, 0))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
-	if (!bMovieMode && bConstraint3 && ImGui::Combo("operation", &item3, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint3 && ImGui::Combo("operation3", &item3, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 	if (!bMovieMode && bConstraint3 && ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 
 	ImGui::Separator();
-	if (ImGui::Button("Save mesh")){
+	if (ImGui::Button("Save Mesh")){
 		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
 			ImGui::OpenPopup("Save error");
 		else{
@@ -304,7 +319,7 @@ void DrawGUI()
 		ImGui::EndPopup();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button("Load mesh")){
+	if (ImGui::Button("Load Mesh")){
 		pDrawer->LoadFile();
 		pDrawer->ResetStep();
 		pDrawer->GetPolyData();
