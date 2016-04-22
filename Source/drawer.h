@@ -10,8 +10,8 @@ public:
 	bool SetMarch(Marching*);
 	void SetEvaluator(Evaluator*);
 	void SetSurfaceConstant(float);
-	void SetSurfaceRepeatStepDistance(float);
-	void SetRepeatingSurfaceMode(bool);
+	void LoadEquation(string);
+	void SaveEquation();
 	bool GetPolyData();
 	void Recalculate();
 	void start();

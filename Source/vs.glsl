@@ -1,4 +1,4 @@
-#version 450 core   
+#version 400 
          
 uniform mat4 P;
 uniform mat4 V;
