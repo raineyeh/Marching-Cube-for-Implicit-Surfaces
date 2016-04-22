@@ -3,6 +3,7 @@
 
 int two_to_the[]={1, 2, 4, 8, 16, 32, 64, 128};
 
+/* 2D cases
 int line_table[][4] = {
 	{ -1, -1, -1, -1 }, //0
 	{ 0, 3, -1, -1 }, //1
@@ -25,7 +26,7 @@ int line_table[][4] = {
 int ambiguous_line_table_redirect[] = { // if midpoint is neg (does not match v0), then use the new lookup value
 	-1, -1, -1, -1, -1, 10, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1
 };
-
+*/
 int cube_edge_vertex_table[][2] = { //edge i is on cube vertex vj,vk
 	{ 0, 1 }, //edge 1
 	{ 1, 2 }, //edge 2

@@ -265,7 +265,7 @@ bool Evaluator::get_equation_from_file( std::string &str)
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
 	OpenFilename.lpstrInitialDir = NULL;
-	OpenFilename.lpstrTitle = "Open";
+	OpenFilename.lpstrTitle = "Load Equation";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
 	OpenFilename.nFileExtension = 0;
@@ -281,6 +281,7 @@ bool Evaluator::get_equation_from_file( std::string &str)
 	char char_arr[256];
 	fgets(char_arr, _countof(char_arr), fp);
 	str = string(char_arr);
+	fclose(fp);
 	return set_equation(str);
 }
 
@@ -292,7 +293,7 @@ bool Evaluator::save_equation_to_file()
 {
 	FILE *fp;
 	OPENFILENAME OpenFilename;
-	TCHAR	szFile[MAX_PATH] = "dana.txt";
+	TCHAR	szFile[MAX_PATH] = "equation.txt";
 	TCHAR	szTitle[MAX_PATH] = "points";
 	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
 	OpenFilename.lStructSize = sizeof (OPENFILENAME);
@@ -307,7 +308,7 @@ bool Evaluator::save_equation_to_file()
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
 	OpenFilename.lpstrInitialDir = NULL;
-	OpenFilename.lpstrTitle = "Save data";
+	OpenFilename.lpstrTitle = "Save Equation";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
 	OpenFilename.nFileExtension = 0;
@@ -316,8 +317,6 @@ bool Evaluator::save_equation_to_file()
 	OpenFilename.lpfnHook = NULL;
 	OpenFilename.lpTemplateName = NULL;
 
-	
-
 	if (GetOpenFileName(&OpenFilename) == false)
 		return false;
 
@@ -325,11 +324,22 @@ bool Evaluator::save_equation_to_file()
 
 	if (NULL == fp)
 		return false;
-	if (equation == "") return false; 
-	if (fprintf_s(fp, "%s", equation.c_str()) == EOF)	return false;
-	cout << equation << endl;
-	return true; 
+	if (equation == ""){
+		fclose(fp);
+		return false;
+	}
+
+	int ret = fprintf_s(fp, "%s", equation.c_str());
+	//cout << equation << endl;
+
+	fclose(fp);
+	return ret != EOF;
 	
+	
+	
+	
+
+		
 }
 
 

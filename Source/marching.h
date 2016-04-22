@@ -87,6 +87,7 @@ public:
     
 	void seed_mode(bool);//this to set the seed mode to true or false 
 	bool set_seed(float x, float y, float z);   //reading the seeed from the UI and checking 
+	void get_seed(float *x, float *y, float *z);
 
 	/* set extra constraints. eg. set_extra_constraint1("z^2",">=",0.0) for the constraint z^2 >= 0.0 
 	possible values for string op are {'>', '<', '>=', '<='}
@@ -141,5 +142,6 @@ private:
 	//xyz seed_grid;
 	deque <xyz> seed_queue;
 	set<xyz> my_seed_set;
+
 };
 

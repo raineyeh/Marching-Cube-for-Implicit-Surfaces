@@ -113,20 +113,28 @@ bool Marching::set_evaluator(Evaluator* e){
 }
 
 void Marching::set_surface_constant(float c){
-
 	this->surface_constant = c;
+	this->reset_step();
 }
 
 bool Marching::set_surface_repeat_step_distance(float l){
 	if (l <= 0)
 		return false;
 	this->surface_step = l;
+	this->reset_step();
 	return true;
 }
 
-void Marching::seed_mode(bool seed){   
-	this->is_seed_mode = seed; 
+void Marching::seed_mode(bool b){   
+	this->is_seed_mode = b;
+	this->reset_step();
 	
+}
+
+void Marching::get_seed(float *x, float *y, float *z){
+	*x = seed[0];
+	*y = seed[1];
+	*z = seed[2];
 }
 
 bool Marching::set_seed(float x, float y, float z)
@@ -134,6 +142,7 @@ bool Marching::set_seed(float x, float y, float z)
 	if ((x <= 1 && x >= -1) && (y >= -1 && y <= 1) && (z >= -1 && z <= 1))
 	{
 		seed[0] = x; seed[1] = y; seed[2] = z;
+		this->reset_step();
 		return true;
 	}
 	else
@@ -145,6 +154,7 @@ bool Marching::repeating_surface_mode(bool b){
 		return this->is_repeating_surface = false;
 	}
 	this->is_repeating_surface = b;
+	this->reset_step();
 	return true;
 }
 
@@ -174,11 +184,13 @@ bool Marching::set_constraint(int constraint_i, string constraint_lhs, string co
 	this->constraints[constraint_i].lhs = constraint_lhs;
 	this->constraints[constraint_i].op = op;
 	this->constraints[constraint_i].rhs = rhs_value;
+	this->reset_step();
 }
 
 bool Marching::use_constraint(int constraint_i, bool use){
 	if (constraint_i >= 0 && constraint_i >= this->constraints.size())
 		return false;
+	this->reset_step();
 	return this->constraints[constraint_i].in_use = use;
 }
 
@@ -216,12 +228,15 @@ bool Marching::set_grid_step_size(float v){
 
 void Marching::set_scaling_x(float s){
 	this->scale_x = s;
+	this->reset_step();
 }
 void Marching::set_scaling_y(float s){
 	this->scale_y = s;
+	this->reset_step();
 }
 void Marching::set_scaling_z(float s){
 	this->scale_z = s;
+	this->reset_step();
 }
 
 
@@ -256,6 +271,8 @@ bool Marching::check_constraints(float x, float y, float z){
 
 void Marching::step_by_step_mode(bool mode){
 	this->is_step_by_step = mode;
+	this->reset_step();
+	
 }
 
 void Marching::reset_step(){
@@ -267,6 +284,7 @@ void Marching::reset_all_data(){
 	this->poly_data.vertex_list.clear();
 	this->poly_data.step_data.intersect_coord.clear();
 	this->poly_data.step_data.tri_vlist.clear();
+	this->poly_data.step_data.edge_list.clear();
 
 	this->vertex_set.clear();
 	this->my_seed_set.clear();
@@ -445,6 +463,8 @@ void Marching::calculate_step(float x_0, float y_0, float z_0){
 	Step_Data* step = &this->poly_data.step_data;
 	step->intersect_coord.clear();
 	step->tri_vlist.clear();
+	step->edge_list.clear();
+	
 
 	step->corner_coords = { x_0, y_0, z_0, x_1, y_0, z_0, x_1, y_1, z_0, x_0, y_1, z_0, 
 		x_0, y_0, z_1, x_1, y_0, z_1, x_1, y_1, z_1, x_0, y_1, z_1 };
@@ -651,6 +671,7 @@ deque<xyz> const * Marching::get_seed_queue(){
 bool Marching::load_poly_from_file(){
 
 	reset_all_data();
+	
 	FILE *fp;
 	OPENFILENAME OpenFilename;
 	TCHAR	szFile[MAX_PATH] = "mesh.ply";
@@ -668,7 +689,7 @@ bool Marching::load_poly_from_file(){
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
 	OpenFilename.lpstrInitialDir = NULL;
-	OpenFilename.lpstrTitle = "Open";
+	OpenFilename.lpstrTitle = "Load Mesh";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
 	OpenFilename.nFileExtension = 0;
@@ -684,145 +705,158 @@ bool Marching::load_poly_from_file(){
 	int num_of_points = 0; int num_of_triangles = 0;
 	float x = 0, y = 0, z = 0;
 	char char_arr[256];
-	string str;	
+	string str;
 	fgets(char_arr, _countof(char_arr), fp);
 	str = string(char_arr);
-	if( str.find("ply")==-1)
+	if (str.find("ply") == -1){
+		fclose(fp);
 		return false;
+	}
 	fgets(char_arr, _countof(char_arr), fp);
 	str = string(char_arr);
-	if (str.find("format ascii 1.0") == -1)
+	if (str.find("format ascii 1.0") == -1){
+		fclose(fp);
 		return false;
+	}
 	fgets(char_arr, _countof(char_arr), fp);
 	str = string(char_arr);
 	int counter = 2;
 	while (str.find("end_header") == -1)
 	{
 		counter++;
-		if (counter >= 10) return false;
+		if (counter >= 10){
+			fclose(fp);
+			return false;
+		}
 		if (str.find("element vertex") != -1)
 		{
 			num_of_points = stoi(str.substr(15, str.length() - 15));
-			cout << "num_of_points" << num_of_points << endl;
+			//cout << "num_of_points" << num_of_points << endl;
 		}
 		if (str.find("element face") != -1)
 		{
 			num_of_triangles = stoi(str.substr(13, str.length() - 13));
-			cout << "number of triangles" << num_of_triangles << endl;
+			//cout << "number of triangles" << num_of_triangles << endl;
 		}
-		if (str=="") break; 
+		if (str == "") break;
 		fgets(char_arr, _countof(char_arr), fp);
 		str = string(char_arr);
 	}
 
 	for (int i = 0; i < num_of_points; i++){
-		if(fscanf_s(fp, "%f", &x)==EOF) return false;
-		if(fscanf_s(fp, "%f", &y)==EOF)return false;
-		if(fscanf_s(fp, "%f", &z)==EOF) return false;
+		if (fscanf_s(fp, "%f", &x) == EOF ||
+			(fscanf_s(fp, "%f", &y) == EOF) ||
+			(fscanf_s(fp, "%f", &z) == EOF))
+		{
+			fclose(fp);
+			return false;
+		}
 		//cout << "x=" << x << "y=" << y << "z=" << z << endl;
 		poly_data.vertex_list.push_back(x);
 		poly_data.vertex_list.push_back(y);
 		poly_data.vertex_list.push_back(z);
 	}
-	unsigned int num=0, x0, y0, z0;
+	unsigned int num = 0, x0, y0, z0;
 
 	for (int i = 0; i < num_of_triangles; i++)
 	{
-		if(fscanf_s(fp, "%u %u %u %u", &num, &x0, &y0, &z0)==EOF) return false ;
-		if (num != 3)
+		if (fscanf_s(fp, "%u %u %u %u", &num, &x0, &y0, &z0) == EOF) return false;
+		if (num != 3){
+			fclose(fp);
 			return false;
-		else {
-			//cout << "x0=" << x0 << "y0=" << y0 << "z0=" << z0 << endl;
-			poly_data.tri_list.push_back(x0);
-			poly_data.tri_list.push_back(y0);
-			poly_data.tri_list.push_back(z0);
-		}
-	}
-		fclose(fp);
-		return true;
-	}
-
-	bool Marching::save_poly_to_file(){
-		FILE *fp;
-		OPENFILENAME OpenFilename;
-		TCHAR	szFile[MAX_PATH] = "dana.ply";
-		TCHAR	szTitle[MAX_PATH] = "points";
-		static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
-		OpenFilename.lStructSize = sizeof (OPENFILENAME);
-		OpenFilename.hwndOwner = NULL;
-		OpenFilename.hInstance = NULL;
-		OpenFilename.lpstrFilter = szFilter;
-		OpenFilename.lpstrCustomFilter = NULL;
-		OpenFilename.nMaxCustFilter = 0;
-		OpenFilename.nFilterIndex = 0;
-		OpenFilename.lpstrFile = szFile;
-		OpenFilename.nMaxFile = MAX_PATH;
-		OpenFilename.lpstrFileTitle = szTitle;
-		OpenFilename.nMaxFileTitle = MAX_PATH;
-		OpenFilename.lpstrInitialDir = NULL;
-		OpenFilename.lpstrTitle = "Save data";
-		OpenFilename.Flags = OFN_EXPLORER;
-		OpenFilename.nFileOffset = 0;
-		OpenFilename.nFileExtension = 0;
-		OpenFilename.lpstrDefExt = TEXT("poly");
-		OpenFilename.lCustData = 0L;
-		OpenFilename.lpfnHook = NULL;
-		OpenFilename.lpTemplateName = NULL;
-
-		if (this->poly_data.vertex_list.empty())
-			return false;
-
-		if (GetOpenFileName(&OpenFilename) == false)
-			return false;
-
-		errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");
-
-		if (NULL == fp)
-			return false;
-
-		int num_of_points = 0; int num_of_triangles = 0;
-		float x = 0, y = 0, z = 0;
-		num_of_points = ((this->poly_data.vertex_list.size()) / 3);
-
-		//cout << num_of_points;
-		char buffer[100];
-		num_of_triangles = ((poly_data.tri_list.size()) / 3);
-		unsigned int x0 = 0, y0 = 0, z0 = 0;
-		//adding the header of the poly file 
-		sprintf_s(buffer, "%s", "ply\nformat ascii 1.0\n");
-		fprintf_s(fp, "%s", buffer);
-		cout << "buffer=" << buffer << endl;
-		sprintf_s(buffer, "element vertex %d\n", num_of_points);
-		fprintf_s(fp, "%s", buffer);
-		sprintf_s(buffer, "%s", "property float x\nproperty float y\nproperty float z\n");
-		fprintf_s(fp, "%s", buffer);
-		sprintf_s(buffer, "element face %d \n", num_of_triangles);
-		fprintf_s(fp, "%s", buffer);
-		sprintf_s(buffer, "%s", "property list uchar int vertex_indices\nend_header\n");
-		fprintf_s(fp, "%s", buffer);
-		for (int i = 0; i < num_of_points; i++)
-		{
-			x = poly_data.vertex_list[i * 3];
-			y = poly_data.vertex_list[i * 3 + 1];
-			z = poly_data.vertex_list[i * 3 + 2];
-			sprintf_s(buffer, "%f %f %f\n", x, y, z);
-			fprintf_s(fp, "%s", buffer);
 		}
 
-
-		for (int i = 0; i < num_of_triangles; i++)
-		{
-			x0 = poly_data.tri_list.at(i * 3);
-			y0 = poly_data.tri_list.at(i * 3 + 1);
-			z0 = poly_data.tri_list.at(i * 3 + 2);
-			sprintf_s(buffer, "%u %u %u %u\n", 3, x0, y0, z0);
-			fprintf_s(fp, "%s", buffer);
-
-		}
-		fclose(fp);
-		return true;
+		//cout << "x0=" << x0 << "y0=" << y0 << "z0=" << z0 << endl;
+		poly_data.tri_list.push_back(x0);
+		poly_data.tri_list.push_back(y0);
+		poly_data.tri_list.push_back(z0);
 
 	}
+	fclose(fp);
+	return true;
+}
+
+bool Marching::save_poly_to_file(){
+	FILE *fp;
+	OPENFILENAME OpenFilename;
+	TCHAR	szFile[MAX_PATH] = "mesh.ply";
+	TCHAR	szTitle[MAX_PATH] = "points";
+	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
+	OpenFilename.lStructSize = sizeof (OPENFILENAME);
+	OpenFilename.hwndOwner = NULL;
+	OpenFilename.hInstance = NULL;
+	OpenFilename.lpstrFilter = szFilter;
+	OpenFilename.lpstrCustomFilter = NULL;
+	OpenFilename.nMaxCustFilter = 0;
+	OpenFilename.nFilterIndex = 0;
+	OpenFilename.lpstrFile = szFile;
+	OpenFilename.nMaxFile = MAX_PATH;
+	OpenFilename.lpstrFileTitle = szTitle;
+	OpenFilename.nMaxFileTitle = MAX_PATH;
+	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrTitle = "Save Mesh";
+	OpenFilename.Flags = OFN_EXPLORER;
+	OpenFilename.nFileOffset = 0;
+	OpenFilename.nFileExtension = 0;
+	OpenFilename.lpstrDefExt = TEXT("poly");
+	OpenFilename.lCustData = 0L;
+	OpenFilename.lpfnHook = NULL;
+	OpenFilename.lpTemplateName = NULL;
+
+	if (this->poly_data.vertex_list.empty())
+		return false;
+
+	if (GetOpenFileName(&OpenFilename) == false)
+		return false;
+
+	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");
+
+	if (NULL == fp)
+		return false;
+
+	int num_of_points = 0; int num_of_triangles = 0;
+	float x = 0, y = 0, z = 0;
+	num_of_points = ((this->poly_data.vertex_list.size()) / 3);
+
+	//cout << num_of_points;
+	char buffer[100];
+	num_of_triangles = ((poly_data.tri_list.size()) / 3);
+	unsigned int x0 = 0, y0 = 0, z0 = 0;
+	//adding the header of the poly file 
+	sprintf_s(buffer, "%s", "ply\nformat ascii 1.0\n");
+	fprintf_s(fp, "%s", buffer);
+	//cout << "buffer=" << buffer << endl;
+	sprintf_s(buffer, "element vertex %d\n", num_of_points);
+	fprintf_s(fp, "%s", buffer);
+	sprintf_s(buffer, "%s", "property float x\nproperty float y\nproperty float z\n");
+	fprintf_s(fp, "%s", buffer);
+	sprintf_s(buffer, "element face %d \n", num_of_triangles);
+	fprintf_s(fp, "%s", buffer);
+	sprintf_s(buffer, "%s", "property list uchar int vertex_indices\nend_header\n");
+	fprintf_s(fp, "%s", buffer);
+	for (int i = 0; i < num_of_points; i++)
+	{
+		x = poly_data.vertex_list[i * 3];
+		y = poly_data.vertex_list[i * 3 + 1];
+		z = poly_data.vertex_list[i * 3 + 2];
+		sprintf_s(buffer, "%f %f %f\n", x, y, z);
+		fprintf_s(fp, "%s", buffer);
+	}
+
+
+	for (int i = 0; i < num_of_triangles; i++)
+	{
+		x0 = poly_data.tri_list.at(i * 3);
+		y0 = poly_data.tri_list.at(i * 3 + 1);
+		z0 = poly_data.tri_list.at(i * 3 + 2);
+		sprintf_s(buffer, "%u %u %u %u\n", 3, x0, y0, z0);
+		fprintf_s(fp, "%s", buffer);
+
+	}
+	fclose(fp);
+	return true;
+
+}
 
 
 Comp_Op parse_comp_op(string op){
