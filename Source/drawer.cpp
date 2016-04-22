@@ -50,7 +50,7 @@ static ImVec4 colIntersectSurfaceEdges = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
 static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
 string op[4] = { ">=", "<=", "<", ">" };
-bool bLeftPressed, bRightPressed, bHasInit, bMovieMode,bPlaying, bPause, bCubeStep,bReset;
+bool bLeftPressed, bRightPressed, bHasInit, bMovieMode,bPlaying, bPause, bCubeStep;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
 int nLineWidth = 3;
@@ -151,7 +151,7 @@ void DrawGUI()
 				vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
 		}
 		else{
-		//	pDrawer->SetEquation(string(szEquation));
+			pDrawer->SetEquation(string(szEquation));
 			if (bCubeStep){
 				nCubeStep++;
 				if (nCubeStep == 4) {
@@ -163,13 +163,12 @@ void DrawGUI()
 			bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
 			SetStepData();
 		}
-		bReset = false;
-	} ImGui::SameLine();
+	}ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Reset")){		
 		pDrawer->ResetStep();
 		for (int i = 0; i < 3; i++)
-			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
-		bReset = true;
+			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
+		pDrawer->ResetAlldata();
 	}
 	ImGui::Separator();
 	if (!bMovieMode && ImGui::SliderFloat("Grid size", &fGrid, 0.05f, 0.5f,"%.2f")){		
@@ -205,8 +204,7 @@ void DrawGUI()
 	}
 	if (bMovieMode && ImGui::Button("Play")){
 		bPause = false;		
-		bStepMode = true;
-		bReset = false;
+		bStepMode = true;		
 		if (!bPlaying){
 			pDrawer->SetStepMode(true);
 			pDrawer->SetEquation(string(szEquation));
@@ -227,7 +225,7 @@ void DrawGUI()
 		pDrawer->ResetStep();
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
-		bReset = true;
+		pDrawer->ResetAlldata();
 	}
 	
 	if (bMovieMode)ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);		
@@ -238,6 +236,7 @@ void DrawGUI()
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 		pDrawer->ResetStep();
+		pDrawer->ResetAlldata();
 		pDrawer->SetStepMode(bStepMode);					
 	}
 	if (!bSeedingMode && bStepMode){
@@ -324,6 +323,7 @@ void DrawGUI()
 		bMovieMode = false;
 		bPlaying = false;
 		bStepMode = false;
+		pDrawer->ResetAlldata();
 	}
 	if (bRightPressed)
 		ImGui::OpenPopup("menu");
@@ -411,7 +411,7 @@ void DrawCube(){
 	if (!bStepMode) return;	
 	if (pData == nullptr) return;
 	if (pData->step_data.corner_coords.empty()) return;		
-	if(bReset) return;
+	
 	SetStepData();	
 	
 	//cube	
@@ -474,7 +474,7 @@ void DrawCube(){
 
 void DrawModel(){		
 	if (pData == nullptr) return;
-	if (bReset) return;
+	
 	//mesh
 	glBindVertexArray(vao[0]); 	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelFrontFace.x, colModelFrontFace.y, colModelFrontFace.z, bTranslucent ? 0.5f : 1.0f));
@@ -552,8 +552,7 @@ void special(int key, int x, int y){
 
 			bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;					
 		}		
-		SetStepData();
-		bReset = false;
+		SetStepData();		
 		break;
 	}
 }
@@ -713,11 +712,9 @@ void Drawer::SetStepMode(bool mode)
 		m_pMmarching->step_by_step_mode(mode);
 }
 
-void Drawer::SetEquation(string s){
+void Drawer::SetEquation(string s){	
 	if (m_pEvaluator)
-		m_pEvaluator->set_equation(s);	
-	if (m_pMmarching)
-		m_pMmarching->reset_all_data();
+		m_pEvaluator->set_equation(s);		
 }
 
 void Drawer::ResetStep(){
@@ -823,4 +820,10 @@ void Drawer::SaveEquation()
 {
 	if (m_pEvaluator)
 		m_pEvaluator->save_equation_to_file();
+}
+
+void Drawer::ResetAlldata()
+{
+	if (m_pMmarching)
+		m_pMmarching->reset_all_data();
 }

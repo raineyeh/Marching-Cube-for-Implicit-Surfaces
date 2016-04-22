@@ -12,6 +12,7 @@ public:
 	void SetSurfaceConstant(float);
 	void LoadEquation(string);
 	void SaveEquation();
+	void ResetAlldata();
 	bool GetPolyData();
 	void Recalculate();
 	void start();
