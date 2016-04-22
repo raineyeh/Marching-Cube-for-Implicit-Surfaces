@@ -175,22 +175,8 @@ void DrawGUI()
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->ResetStep();					
 	}
-	if (ImGui::Checkbox("Translucent", &bTranslucent)){
-		if (bTranslucent){
-			glDisable(GL_DEPTH_TEST);
-			glEnable(GL_BLEND);
-			colModelFrontFace.w = 0.5f;
-			nLineWidth = 1;
-		}
-		else{
-			glEnable(GL_DEPTH_TEST);
-			glDisable(GL_BLEND);
-			colModelFrontFace.w = 1.0f;
-			nLineWidth = 3;
-		}
-		ModelShader.setUniform("uTranslucent", bTranslucent);
-	}
-	ImGui::Separator();
+	
+	if (!bMovieMode)ImGui::Separator();
 	if (!bMovieMode && ImGui::Button("Movie mode")){
 		if (bMovieMode){
 			bMovieMode = false;
@@ -222,6 +208,7 @@ void DrawGUI()
 	if (bMovieMode)ImGui::SameLine();
 	if (bMovieMode && ImGui::Button("Reset")){		
 		bPlaying = false;
+		movie.join();
 		pDrawer->ResetStep();
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
@@ -229,7 +216,21 @@ void DrawGUI()
 	}
 	
 	if (bMovieMode)ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);		
-	
+	if (ImGui::Checkbox("Translucent", &bTranslucent)){
+		if (bTranslucent){
+			glDisable(GL_DEPTH_TEST);
+			glEnable(GL_BLEND);
+			colModelFrontFace.w = 0.5f;
+			nLineWidth = 1;
+		}
+		else{
+			glEnable(GL_DEPTH_TEST);
+			glDisable(GL_BLEND);
+			colModelFrontFace.w = 1.0f;
+			nLineWidth = 3;
+		}
+		ModelShader.setUniform("uTranslucent", bTranslucent);
+	}
 	if (!bMovieMode && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->SetEquation(string(szEquation));
 		pDrawer->GetPolyData();		
@@ -245,6 +246,7 @@ void DrawGUI()
 			sprintf_s(ch, "RemainSteps:%d", pData->step_data.step_i);
 		ImGui::Text(ch);
 	}
+	if (!bMovieMode)ImGui::Separator();
 	if (!bMovieMode && ImGui::Checkbox("Seeding mode", &bSeedingMode)){				
 		pDrawer->SetSeedMode(bSeedingMode);
 		pDrawer->SetSeed(fSeeding);
@@ -268,22 +270,22 @@ void DrawGUI()
 		pDrawer->UseExtraConstraint1(bConstraint2);
 	}
 	if (!bMovieMode && bConstraint2 && ImGui::InputText("Equation2", szlhs2, 256, 0))
-		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 	if (!bMovieMode && bConstraint2 && ImGui::Combo("operation", &item2, ">=\0<=\0<\0>\0"))
-		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 	if (!bMovieMode && bConstraint2 && ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
-		pDrawer->SetConstraint0(szlhs2, op[item2], frhs2);
+		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 
 	//Constraint3
 	if (!bMovieMode && ImGui::Checkbox("Constraint3", &bConstraint3)) {
 		pDrawer->UseExtraConstraint2(bConstraint3);
 	}
 	if (!bMovieMode && bConstraint3 && ImGui::InputText("Equation3", szlhs3, 256, 0))
-		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 	if (!bMovieMode && bConstraint3 && ImGui::Combo("operation", &item3, ">=\0<=\0<\0>\0"))
-		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 	if (!bMovieMode && bConstraint3 && ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
-		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
+		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 
 	ImGui::Separator();
 	if (ImGui::Button("Save mesh")){
@@ -319,6 +321,7 @@ void DrawGUI()
 		}
 		ImGui::EndPopup();
 	}
+	if (bMovieMode)ImGui::Separator();
 	if (bMovieMode && ImGui::Button("Exit movie mode")){
 		bMovieMode = false;
 		bPlaying = false;
@@ -364,8 +367,10 @@ void DrawGUI()
 	ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Load Equation")){
 		string str;
-		pDrawer->LoadEquation(str);
-		pDrawer->SetEquation(str);
+		pDrawer->LoadEquation(str);			
+		for (int i = 0; i < str.length(); i++)
+			szEquation[i] = str.c_str()[i];
+		szEquation[str.length()] = '\0';
 	}ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Save Equation")){
 		pDrawer->SaveEquation();
@@ -425,7 +430,7 @@ void DrawCube(){
 	glDepthMask(true);
 	if (!bTranslucent)
 		glDisable(GL_BLEND);
-	
+
 	//edge	
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
 	ModelShader.setUniform("uFrontColor", glm::vec4(colCubeEdge.x, colCubeEdge.y, colCubeEdge.z, 1.0f));
@@ -810,7 +815,7 @@ void Drawer::SetSurfaceConstant(float fConstant)
 		m_pMmarching->set_surface_constant(fConstant);
 }
 
-void Drawer::LoadEquation(string s)
+void Drawer::LoadEquation(string &s)
 {
 	if (m_pEvaluator)
 		m_pEvaluator->get_equation_from_file(s);
