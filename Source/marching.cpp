@@ -357,7 +357,7 @@ bool Marching::recalculate(){
 			reset_all_data();
 			
 			float x_0, y_0, z_0;
-			float lower_bound = -1.0 - this->grid_step_size;
+			float lower_bound = -1.0;
 			float upper_bound = 1.0 + 0.5* this->grid_step_size;
 			for (z_0 = lower_bound; z_0 <= upper_bound; z_0 += this->grid_step_size) {
 				for (y_0 = lower_bound; y_0 <= upper_bound; y_0 += this->grid_step_size) {
