@@ -30,7 +30,7 @@ float nColor = 48;
 const Poly_Data* pData;
 static const std::string vertex_shader("..\\..\\Source\\vs.glsl");
 static const std::string fragment_shader("..\\..\\Source\\fs.glsl");
-static char szEquation[256] = "(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5";
+static char szEquation[256] = "x+y";//(x^2+y^2-1)^2 + (x^2+z^2-1)^2 + (z^2+y^2-1)^2 - 0.5
 static float fGrid = 0.2f;
 static float fSurfaceConstant = 0.0f;
 static float fStepDistance = 0.5f;
@@ -46,7 +46,8 @@ static ImVec4 colCubeSurface = ImColor(0.7f, 0.7f, 0.7f, 0.5f);
 static ImVec4 colCubeEdge = ImColor(1.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colModelEdge = ImColor(0.0f, 0.0f,0.0f, 1.0f);
 static ImVec4 colIntersectPoint = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
-static ImVec4 colIntersectSurface = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
+static ImVec4 colIntersectSurface = ImColor(0.0f, 1.0f, 1.0f, 1.0f);
+static ImVec4 colIntersectSurfaceEdges = ImColor(0.0f, 0.0f, 1.0f, 1.0f);
 static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
 static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
 string op[4] = { ">=", "<=", "<", ">" };
@@ -102,7 +103,11 @@ static int Movie()
 	float fTotalStep = (float)pData->step_data.step_i;
 	
 	for (int i = 0; bMovie && i != pData->step_data.step_i;){
-		if (bPause) continue;
+		if (bPause) {
+			nCubeStep = 3;
+			continue;
+		}
+		nCubeStep = -1;
 		fPercent = pData->step_data.step_i / fTotalStep;
 		fPercent = 1.0f - fPercent;
 		pDrawer->Recalculate();	
@@ -138,71 +143,7 @@ void DrawGUI()
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->ResetStep();					
 	}
-	ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);	
-	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
-		if (bMovie){
-			bMovie = false;
-			bPause = false;		
-			movie.join();
-			for (int i = 0; i < 3; i++)
-				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);									
-		}
-		else{	
-			bStepMode = true;
-			bMovie = true;
-			bPause = false;			
-			pDrawer->ResetStep();
-			pDrawer->SetStepMode(true);			
-			pDrawer->SetEquation(string(szEquation));
-			pDrawer->SetGridSize(fGrid);
-			pDrawer->Recalculate();
-			pDrawer->GetPolyData();
-			movie = thread(Movie);		
-		}		
-	}
-	if (bMovie){
-		ImGui::SameLine();
-		if (ImGui::Button(bPause?"Resume":"Pause")){
-			if (bPause)
-				bPause = false;
-			else
-				bPause = true;			
-		}
-	}	
-	ImGui::SameLine();	
-	if (ImGui::Button("Save mesh")){
-		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
-			ImGui::OpenPopup("Save error");	
-		else{
-			if (pDrawer)pDrawer->SaveFile();			
-		}		
-	}
-	if (ImGui::BeginPopupModal("Save error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("No data to save.\n\n");
-		if (ImGui::Button("OK", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup(); 
-		}
-		ImGui::EndPopup();
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Load mesh")){		
-		pDrawer->LoadFile();
-		pDrawer->ResetStep();
-		pDrawer->GetPolyData();			
-		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-						vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
-		else ImGui::OpenPopup("Load error");
-	}
-	if (ImGui::BeginPopupModal("Load error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-	{
-		ImGui::Text("No data to load.\n\n");
-		if (ImGui::Button("OK", ImVec2(120, 0))) {
-			ImGui::CloseCurrentPopup();
-		}
-		ImGui::EndPopup();
-	}
+	ImGui::SliderInt("Movie speed", &nMovieSpeed, 1, 9);		
 	if (ImGui::Checkbox("Translucent", &bTranslucent)){
 		if (bTranslucent){
 			glDisable(GL_DEPTH_TEST);			
@@ -288,6 +229,41 @@ void DrawGUI()
 	if (!bMovie && bConstraint3 && ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs3, op[item3], frhs3);
 
+	
+	if (ImGui::Button("Save mesh")){
+		if (pData == nullptr || pData && pData->vertex_list.size() == 0)
+			ImGui::OpenPopup("Save error");
+		else{
+			if (pDrawer)pDrawer->SaveFile();
+		}
+	}
+	if (ImGui::BeginPopupModal("Save error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("No data to save.\n\n");
+		if (ImGui::Button("OK", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Load mesh")){
+		pDrawer->LoadFile();
+		pDrawer->ResetStep();
+		pDrawer->GetPolyData();
+		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+			vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+		else ImGui::OpenPopup("Load error");
+	}
+	if (ImGui::BeginPopupModal("Load error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("No data to load.\n\n");
+		if (ImGui::Button("OK", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+
 	if (bRightPressed)
 		ImGui::OpenPopup("menu");
 	if (ImGui::BeginPopup("menu"))
@@ -303,42 +279,87 @@ void DrawGUI()
 		ImGui::ColorPlate(&colOutCornerPoint, "Outside point color");
 		ImGui::ColorPlate(&colIntersectPoint, "Intersect point color");
 		ImGui::ColorPlate(&colIntersectSurface, "Intersect surface color");
+		ImGui::ColorPlate(&colIntersectSurfaceEdges, "Intersect edges color");		
 		ImGui::EndPopup();
 	}
 	
-
 	//top bar	
-	ImGui::Begin("ImGui Demo", 0.75f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("ImGui Demo", 0.72f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
 	ImGui::SetWindowSize(psize);
 	ImVec2 ppos(0,0);
 	ImGui::SetWindowPos(ppos);
-	ImGui::Text("P(sx,sy,sz)="); ImGui::SameLine();
+	ImGui::Text("P(ax,by,cz)="); ImGui::SameLine();
 	ImGui::SetWindowFontScale(1.5);
 	ImGui::InputText("=", szEquation, 256, 0);ImGui::SameLine();	
 	if (ImGui::InputFloat("s", &fSurfaceConstant, 0.0f, 0.0f, 2)){
 		pDrawer->SetSurfaceConstant(fSurfaceConstant);
 		pDrawer->ResetStep();		
 	}
-	ImGui::Text("s ="); ImGui::SameLine();
+	ImGui::Text("a b c = "); ImGui::SameLine();
 	if (ImGui::InputFloat3(" ", fScaler)){		
 		pDrawer->SetScaling(fScaler);
 	}	
 	ImGui::SameLine();
 	
 	if (!bMovie && ImGui::Button("Refresh")){
-		pDrawer->SetEquation(string(szEquation));
-		pDrawer->SetGridSize(fGrid);
-		pDrawer->Recalculate();
-		pDrawer->GetPolyData();		
-		if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
-			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-					   vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+		if (!bStepMode){
+			pDrawer->SetEquation(string(szEquation));
+			pDrawer->SetGridSize(fGrid);
+			pDrawer->Recalculate();
+			pDrawer->GetPolyData();
+			if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+				BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
+				vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0]);
+		}
+		else{
+			if (bCubeStep){
+				nCubeStep++;
+				if (nCubeStep == 4) {
+					nCubeStep = 0;
+					pDrawer->Recalculate();
+				}				
+			}
+			else
+				pDrawer->Recalculate();
+			bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
+		}
+		SetStepData();		
 	} ImGui::SameLine();
 	if (!bMovie && ImGui::Button("Reset")){		
 		pDrawer->ResetStep();
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
+	}ImGui::SameLine();
+	if (ImGui::Button(bMovie ? "Stop" : "Movie")){
+		if (bMovie){
+			bMovie = false;
+			bPause = false;
+			movie.join();
+			for (int i = 0; i < 3; i++)
+				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
+		}
+		else{
+			bStepMode = true;
+			bMovie = true;
+			bPause = false;
+			pDrawer->ResetStep();
+			pDrawer->SetStepMode(true);
+			pDrawer->SetEquation(string(szEquation));
+			pDrawer->SetGridSize(fGrid);
+			pDrawer->Recalculate();
+			pDrawer->GetPolyData();
+			movie = thread(Movie);
+		}		
+	}
+	if (bMovie){
+		ImGui::SameLine();
+		if (ImGui::Button(bPause ? "Resume" : "Pause")){
+			if (bPause)
+				bPause = false;
+			else
+				bPause = true;
+		}
 	}
 	ImGui::End();	
 // 	static bool show2 = true;
@@ -415,7 +436,7 @@ void DrawCube(){
 			glDrawArrays(GL_POINTS, n++, 1);
 		}
 	}
-	//intersect	
+	//intersect	point
 	if (nCubeStep > 1){
 		glBindVertexArray(vao[2]);
 		ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectPoint.x, colIntersectPoint.y, colIntersectPoint.z, 1.0f));
@@ -431,19 +452,31 @@ void DrawCube(){
 			ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, 1.0f));
 			ModelShader.setUniform("uBackColor", glm::vec4(colIntersectSurface.x, colIntersectSurface.y, colIntersectSurface.z, colModelBackFace.w));
 			glDrawElements(GL_TRIANGLES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
+			//polygon edges
+			glLineWidth(4);
+			ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectSurfaceEdges.x, colIntersectSurfaceEdges.y, colIntersectSurfaceEdges.z, 1.0f));
+			glDrawElements(GL_LINES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
+			glLineWidth(2);
 		}
 	}
+
 	glBindVertexArray(0);	
 }
 
 void DrawModel(){		
 	if (pData == nullptr) return;
 	
+	//mesh
 	glBindVertexArray(vao[0]); 	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelFrontFace.x, colModelFrontFace.y, colModelFrontFace.z, bTranslucent ? 0.5f : 1.0f));
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelBackFace.x, colModelBackFace.y, colModelBackFace.z, colModelBackFace.w));
 	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
-
+	glDrawArrays(GL_POINTS, 0,(pData->vertex_list.size() - 2) * 3);
+	
+	//edges
+	glm::mat4 M_old = M;
+	M = glm::scale(M, glm::vec3(1.001f));
+	ModelShader.setUniform("M", M);	
 	glLineWidth(nLineWidth);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
@@ -451,7 +484,9 @@ void DrawModel(){
 	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glLineWidth(1);
+	glLineWidth(2);
+	M = M_old;
+	ModelShader.setUniform("M", M);	
 }
 
 void display()
@@ -546,7 +581,8 @@ void idle(){
 	glutPostRedisplay();
 }
 void reshape(int w, int h){	
-	glViewport(0, 0, w - nBarWidth, h - nPolynomialHeight);
+	int nMaxLenth = h - nPolynomialHeight;
+	glViewport((w - nBarWidth - nMaxLenth) / 2.0f, 0, nMaxLenth, nMaxLenth);
 	nWindowWidth = w;
 	nWindowHeight = h;
 }
@@ -732,6 +768,7 @@ bool Drawer::SetConstraint2(string lhs, string op, float rhs)
 bool Drawer::UseExtraConstraint0(bool b)
 {
 	if (m_pMmarching)
+
 		return m_pMmarching->use_constraint0(b);
 	return false;
 }
