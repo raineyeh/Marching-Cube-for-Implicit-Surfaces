@@ -160,8 +160,11 @@ void DrawGUI()
 				}
 			}
 			else pDrawer->Recalculate();
-			bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
-			SetStepData();
+			pDrawer->GetPolyData();
+			if (pData != nullptr){
+				bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
+				SetStepData();
+			}			
 		}
 	}ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Reset")){		
@@ -248,7 +251,7 @@ void DrawGUI()
 	}
 	if (!bMovieMode && ImGui::Checkbox("Step mode", &bStepMode)){
 		pDrawer->SetEquation(string(szEquation));
-		pDrawer->GetPolyData();		
+	//	pDrawer->GetPolyData();		
 		for (int i = 0; i < 3; i++)
 			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
 		pDrawer->ResetStep();
@@ -273,33 +276,33 @@ void DrawGUI()
 	if (!bMovieMode && ImGui::Checkbox("Constraint 1", &bConstraint1)){
 		pDrawer->UseExtraConstraint0(bConstraint1);
 	}
-	if (!bMovieMode && bConstraint1 && ImGui::InputText("Equation1", szlhs1, 256, 0))
+	if (!bMovieMode && bConstraint1 && ImGui::InputText("Equation 1", szlhs1, 256, 0))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
-	if (!bMovieMode && bConstraint1 && ImGui::Combo("operation1", &item1, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint1 && ImGui::Combo("Operation 1", &item1, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
-	if (!bMovieMode && bConstraint1 && ImGui::InputFloat("Const1", &frhs1, 0.0f, 0.0f, 2))
+	if (!bMovieMode && bConstraint1 && ImGui::InputFloat("Const 1", &frhs1, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint0(szlhs1, op[item1], frhs1);
 	
 	//Constraint2
 	if (!bMovieMode && ImGui::Checkbox("Constraint 2", &bConstraint2)) {
 		pDrawer->UseExtraConstraint1(bConstraint2);
 	}
-	if (!bMovieMode && bConstraint2 && ImGui::InputText("Equation2", szlhs2, 256, 0))
+	if (!bMovieMode && bConstraint2 && ImGui::InputText("Equation 2", szlhs2, 256, 0))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
-	if (!bMovieMode && bConstraint2 && ImGui::Combo("operation2", &item2, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint2 && ImGui::Combo("Operation 2", &item2, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
-	if (!bMovieMode && bConstraint2 && ImGui::InputFloat("Const2", &frhs2, 0.0f, 0.0f, 2))
+	if (!bMovieMode && bConstraint2 && ImGui::InputFloat("Const 2", &frhs2, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint1(szlhs2, op[item2], frhs2);
 
 	//Constraint3
 	if (!bMovieMode && ImGui::Checkbox("Constraint 3", &bConstraint3)) {
 		pDrawer->UseExtraConstraint2(bConstraint3);
 	}
-	if (!bMovieMode && bConstraint3 && ImGui::InputText("Equation3", szlhs3, 256, 0))
+	if (!bMovieMode && bConstraint3 && ImGui::InputText("Equation 3", szlhs3, 256, 0))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
-	if (!bMovieMode && bConstraint3 && ImGui::Combo("operation3", &item3, ">=\0<=\0<\0>\0"))
+	if (!bMovieMode && bConstraint3 && ImGui::Combo("Operation 3", &item3, ">=\0<=\0<\0>\0"))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
-	if (!bMovieMode && bConstraint3 && ImGui::InputFloat("Const3", &frhs3, 0.0f, 0.0f, 2))
+	if (!bMovieMode && bConstraint3 && ImGui::InputFloat("Const 3", &frhs3, 0.0f, 0.0f, 2))
 		pDrawer->SetConstraint2(szlhs3, op[item3], frhs3);
 
 	ImGui::Separator();
@@ -382,10 +385,11 @@ void DrawGUI()
 	ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Load Equation")){
 		string str;
-		pDrawer->LoadEquation(str);			
-		for (int i = 0; i < str.length(); i++)
-			szEquation[i] = str.c_str()[i];
-		szEquation[str.length()] = '\0';
+		if (pDrawer->LoadEquation(str)){
+			for (int i = 0; i < str.length(); i++)
+				szEquation[i] = str.c_str()[i];
+			szEquation[str.length()] = '\0';
+		}		
 	}ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Save Equation")){
 		pDrawer->SaveEquation();
@@ -556,8 +560,7 @@ void special(int key, int x, int y){
 	if (bStepMode == false) return;
 	switch (key)
 	{
-	case GLUT_KEY_RIGHT:
-		if (pData == nullptr) break;
+	case GLUT_KEY_RIGHT:		
 		if (pDrawer) {
 			if (bCubeStep){
 				nCubeStep++;
@@ -567,10 +570,12 @@ void special(int key, int x, int y){
 				}
 				else break;
 			}			
-			else 
+			else {
 				pDrawer->Recalculate();
-
-			bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;					
+				pDrawer->GetPolyData();
+			}			
+			if (pData)
+				bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;					
 		}		
 		SetStepData();		
 		break;
@@ -801,7 +806,6 @@ bool Drawer::SetConstraint2(string lhs, string op, float rhs)
 bool Drawer::UseExtraConstraint0(bool b)
 {
 	if (m_pMmarching)
-
 		return m_pMmarching->use_constraint0(b);
 	return false;
 }
@@ -830,10 +834,11 @@ void Drawer::SetSurfaceConstant(float fConstant)
 		m_pMmarching->set_surface_constant(fConstant);
 }
 
-void Drawer::LoadEquation(string &s)
+bool Drawer::LoadEquation(string &s)
 {
 	if (m_pEvaluator)
-		m_pEvaluator->get_equation_from_file(s);
+		return m_pEvaluator->get_equation_from_file(s);
+	return false;
 }
 
 void Drawer::SaveEquation()

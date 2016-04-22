@@ -10,7 +10,7 @@ public:
 	bool SetMarch(Marching*);
 	void SetEvaluator(Evaluator*);
 	void SetSurfaceConstant(float);
-	void LoadEquation(string&);
+	bool LoadEquation(string&);
 	void SaveEquation();
 	void ResetAlldata();
 	bool GetPolyData();
