@@ -1,5 +1,8 @@
 #include "evaluator.h"
 #include <iostream>
+#include <windows.h>
+#include <fstream>
+#include <iostream>
 using namespace std;
 
 Evaluator::Evaluator()
@@ -240,4 +243,94 @@ void Evaluator::tokenizer()
 																   for (int i = 0; i < token.size(); i++)
 																   	cout << token[i] << endl;*/
 }//end of tokenizer
+
+
+bool Evaluator::get_equation_from_file( std::string &str)
+{
+
+	FILE *fp;
+	OPENFILENAME OpenFilename;
+	TCHAR	szFile[MAX_PATH] = "equation.txt";
+	TCHAR	szTitle[MAX_PATH] = "points";
+	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
+	OpenFilename.lStructSize = sizeof(OPENFILENAME);
+	OpenFilename.hwndOwner = NULL;
+	OpenFilename.hInstance = NULL;
+	OpenFilename.lpstrFilter = szFilter;
+	OpenFilename.lpstrCustomFilter = NULL;
+	OpenFilename.nMaxCustFilter = 0;
+	OpenFilename.nFilterIndex = 0;
+	OpenFilename.lpstrFile = szFile;
+	OpenFilename.nMaxFile = MAX_PATH;
+	OpenFilename.lpstrFileTitle = szTitle;
+	OpenFilename.nMaxFileTitle = MAX_PATH;
+	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrTitle = "Open";
+	OpenFilename.Flags = OFN_EXPLORER;
+	OpenFilename.nFileOffset = 0;
+	OpenFilename.nFileExtension = 0;
+	OpenFilename.lpstrDefExt = TEXT("txt");
+	OpenFilename.lCustData = 0L;
+	OpenFilename.lpfnHook = NULL;
+	OpenFilename.lpTemplateName = NULL;
+	if (!GetOpenFileName(&OpenFilename))
+		return false;
+	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "r");
+	if (NULL == fp)
+		return  false;
+	char char_arr[256];
+	fgets(char_arr, _countof(char_arr), fp);
+	str = string(char_arr);
+	return set_equation(str);
+}
+
+
+
+
+
+bool Evaluator::save_equation_to_file()
+{
+	FILE *fp;
+	OPENFILENAME OpenFilename;
+	TCHAR	szFile[MAX_PATH] = "dana.txt";
+	TCHAR	szTitle[MAX_PATH] = "points";
+	static TCHAR szFilter[] = "file type\0*.*\0file type1\0*.*\0";
+	OpenFilename.lStructSize = sizeof (OPENFILENAME);
+	OpenFilename.hwndOwner = NULL;
+	OpenFilename.hInstance = NULL;
+	OpenFilename.lpstrFilter = szFilter;
+	OpenFilename.lpstrCustomFilter = NULL;
+	OpenFilename.nMaxCustFilter = 0;
+	OpenFilename.nFilterIndex = 0;
+	OpenFilename.lpstrFile = szFile;
+	OpenFilename.nMaxFile = MAX_PATH;
+	OpenFilename.lpstrFileTitle = szTitle;
+	OpenFilename.nMaxFileTitle = MAX_PATH;
+	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrTitle = "Save data";
+	OpenFilename.Flags = OFN_EXPLORER;
+	OpenFilename.nFileOffset = 0;
+	OpenFilename.nFileExtension = 0;
+	OpenFilename.lpstrDefExt = TEXT("txt");
+	OpenFilename.lCustData = 0L;
+	OpenFilename.lpfnHook = NULL;
+	OpenFilename.lpTemplateName = NULL;
+
+	
+
+	if (GetOpenFileName(&OpenFilename) == false)
+		return false;
+
+	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");
+
+	if (NULL == fp)
+		return false;
+	if (equation == "") return false; 
+	if (fprintf_s(fp, "%s", equation.c_str()) == EOF)	return false;
+	cout << equation << endl;
+	return true; 
+	
+}
+
+
 

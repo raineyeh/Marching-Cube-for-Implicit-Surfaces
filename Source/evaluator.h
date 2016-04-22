@@ -51,6 +51,9 @@ public:
 	Evaluator(std::string);
 	bool set_equation(std::string);
 	float evaluate(float x, float y, float z);
+	bool get_equation_from_file(std::string &str);
+	bool save_equation_to_file();
+	
 };
 
 #endif

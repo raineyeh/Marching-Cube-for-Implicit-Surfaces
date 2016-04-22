@@ -108,7 +108,7 @@ public:
 
 	bool load_poly_from_file(); //load polygonal data from file in .poly format. result can be retrieved with get_poly_data()
 	bool save_poly_to_file(); //save polygonal data to file in .poly format.
-
+	
 
 private:
 	float evaluate(float x, float y, float z);
