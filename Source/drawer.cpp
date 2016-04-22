@@ -454,9 +454,11 @@ void DrawCube(){
 			glDrawElements(GL_TRIANGLES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
 			//polygon edges
 			glLineWidth(4);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 			ModelShader.setUniform("uFrontColor", glm::vec4(colIntersectSurfaceEdges.x, colIntersectSurfaceEdges.y, colIntersectSurfaceEdges.z, 1.0f));
-			glDrawElements(GL_LINES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
+			glDrawElements(GL_TRIANGLES, pData->step_data.intersect_coord.size(), GL_UNSIGNED_INT, 0);
 			glLineWidth(2);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 	}
 
@@ -470,9 +472,8 @@ void DrawModel(){
 	glBindVertexArray(vao[0]); 	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelFrontFace.x, colModelFrontFace.y, colModelFrontFace.z, bTranslucent ? 0.5f : 1.0f));
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelBackFace.x, colModelBackFace.y, colModelBackFace.z, colModelBackFace.w));
-	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
-	glDrawArrays(GL_POINTS, 0,(pData->vertex_list.size() - 2) * 3);
-	
+	glDrawElements(GL_TRIANGLES, pData->tri_list.size(), GL_UNSIGNED_INT, 0);
+		
 	//edges
 	glm::mat4 M_old = M;
 	M = glm::scale(M, glm::vec3(1.001f));
@@ -481,7 +482,7 @@ void DrawModel(){
 	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	
 	ModelShader.setUniform("uFrontColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
 	ModelShader.setUniform("uBackColor", glm::vec4(colModelEdge.x, colModelEdge.y, colModelEdge.z, 1.0f));
-	glDrawElements(GL_TRIANGLES, (pData->vertex_list.size() - 2) * 3, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, pData->tri_list.size() , GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);	
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glLineWidth(2);
@@ -551,7 +552,7 @@ void special(int key, int x, int y){
 
 void motion(int x, int y){
 	ImGui_ImplGlut_MouseMotionCallback(x, y);
-	if (bLeftPressed && x < nWindowWidth - nBarWidth)
+	if (bLeftPressed && x < nWindowWidth - nBarWidth && y>nPolynomialHeight)
 	 {  // if left button is pressed
 		nCurX = x;
 		nCurY = y;
@@ -687,6 +688,8 @@ void Drawer::start(){
 
 void Drawer::SetGridSize(float fGrid)
 {
+// 	int n = fGrid * 1000+1;
+// 	float fNewGrid = (float)n / 1000.0f;
 	if (m_pMmarching)
 		m_pMmarching->set_grid_step_size(fGrid);
 }
