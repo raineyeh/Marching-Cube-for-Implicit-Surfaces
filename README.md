@@ -1,5 +1,3 @@
 # 3D Marching Cubes For Implicit Surfaces
 
-A continuation method to tessellate an algebraic surface. Grid resolution can 
-be chosen by the user. Include adaptive grid refinements of ambiguous divisions, limit the 
-refinement to ½ and ¼ of the starting grid resolution. Resolution changes one step at a time. 
+The project aims to implement 3D marching cubes algorithm, an algorithm for creating a polygonal surface representation of an algebraic surface of a 3D scalar field. 
