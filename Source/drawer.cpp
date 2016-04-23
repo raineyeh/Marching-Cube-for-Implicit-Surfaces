@@ -75,12 +75,6 @@ unsigned int idxEdge[30] = { 0, 1, 2, 3, 0, 1, 5, 6, 2, 1, 5, 4, 7, 6, 5, 4, 0, 
 void BufferData(GLuint ibo, GLuint ni, void* pi, GLuint vbo, GLuint nv, void* pv){
 	glNamedBufferData(ibo, ni, pi, GL_DYNAMIC_DRAW);
 	glNamedBufferData(vbo, nv, pv, GL_DYNAMIC_DRAW);	
-// 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-// 	glBufferData(GL_ARRAY_BUFFER, nv, pv, GL_DYNAMIC_DRAW);
-// 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-// 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, ni, pi, GL_DYNAMIC_DRAW);
-// 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 void SetStepData(){
 	if (pData == nullptr) return;
@@ -114,6 +108,7 @@ static int Movie()
 		}
 		nCubeStep = -1;		
 		pDrawer->Recalculate();	
+		
 		if (pData->step_data.intersect_coord.size()>0)
 		for (int nStep = 0; nStep < 4; nStep++)
 		{
@@ -163,7 +158,7 @@ void DrawGUI()
 			pDrawer->GetPolyData();
 			if (pData != nullptr){
 				bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
-				SetStepData();
+				
 			}			
 		}
 	}ImGui::SameLine();
@@ -344,6 +339,7 @@ void DrawGUI()
 		bMovieMode = false;
 		bPlaying = false;
 		bStepMode = false;
+		movie.join();
 		pDrawer->ResetAlldata();
 	}
 	if (bRightPressed)
@@ -366,7 +362,7 @@ void DrawGUI()
 	}
 	
 	//top bar	
-	ImGui::Begin("ImGui Demo", 0.64f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+	ImGui::Begin("ImGui Demo", 0.55f, false, ImVec2(nWindowHeight, 0), -1.0f, ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
 	ImVec2 psize(nWindowWidth, nPolynomialHeight);	
 	ImGui::SetWindowSize(psize);
 	ImVec2 ppos(0,0);
@@ -453,7 +449,7 @@ void DrawCube(){
 	//edge	
 	BufferData(ibo[1], sizeof(idxEdge), idxEdge, 0, 0, 0);
 	ModelShader.setUniform("uFrontColor", glm::vec4(colCubeEdge.x, colCubeEdge.y, colCubeEdge.z, 1.0f));
-	glBindVertexArray(vao[1]);
+	glBindVertexArray(vao[1]);	
 	glDrawElements(GL_LINE_STRIP, 30, GL_UNSIGNED_INT, 0);
 		
 	//corner,1	
@@ -576,8 +572,7 @@ void special(int key, int x, int y){
 			}			
 			if (pData)
 				bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;					
-		}		
-		SetStepData();		
+		}			
 		break;
 	}
 }
