@@ -39,7 +39,10 @@ bool Evaluator::set_equation(std::string s) {
 }
 bool Evaluator::check_bug()
 {
-	if ( token.size() == 0) { std::cout<< "empty string" << endl; return false; }
+	if ( token.size() == 0) { 
+	//	std::cout<< "empty string" << endl; 
+		return false; 
+	}
 	int open_brace = 0;
 	for (int i = 0; i < token.size(); i++)
 	{ 
@@ -50,7 +53,8 @@ bool Evaluator::check_bug()
 		else if (is_close_brace(ch)){
 			open_brace--;
 			if (open_brace == -1){
-				std::cout << "wrong braces" << endl; return false;
+				//std::cout << "wrong braces" << endl; 
+				return false;
 			}
 		}
 		
@@ -245,7 +249,7 @@ void Evaluator::tokenizer()
 }//end of tokenizer
 
 
-bool Evaluator::get_equation_from_file( std::string &str)
+bool Evaluator::get_equation_from_file(std::string &str)
 {
 
 	FILE *fp;
@@ -264,7 +268,7 @@ bool Evaluator::get_equation_from_file( std::string &str)
 	OpenFilename.nMaxFile = MAX_PATH;
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
-	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrInitialDir = "."; //Initial directory
 	OpenFilename.lpstrTitle = "Load Equation";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
@@ -273,6 +277,8 @@ bool Evaluator::get_equation_from_file( std::string &str)
 	OpenFilename.lCustData = 0L;
 	OpenFilename.lpfnHook = NULL;
 	OpenFilename.lpTemplateName = NULL;
+	str = this->equation;
+
 	if (!GetOpenFileName(&OpenFilename))
 		return false;
 	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "r");
@@ -280,9 +286,14 @@ bool Evaluator::get_equation_from_file( std::string &str)
 		return  false;
 	char char_arr[256];
 	fgets(char_arr, _countof(char_arr), fp);
-	str = string(char_arr);
+
+	bool b = set_equation(str);
+	if (b){
+		str = string(char_arr);
+	}
+
 	fclose(fp);
-	return set_equation(str);
+	return b;
 }
 
 
@@ -307,7 +318,7 @@ bool Evaluator::save_equation_to_file()
 	OpenFilename.nMaxFile = MAX_PATH;
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
-	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrInitialDir = ".";
 	OpenFilename.lpstrTitle = "Save Equation";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
@@ -317,7 +328,7 @@ bool Evaluator::save_equation_to_file()
 	OpenFilename.lpfnHook = NULL;
 	OpenFilename.lpTemplateName = NULL;
 
-	if (GetOpenFileName(&OpenFilename) == false)
+	if (GetSaveFileName(&OpenFilename) == false)
 		return false;
 
 	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");

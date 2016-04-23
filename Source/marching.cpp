@@ -688,7 +688,7 @@ bool Marching::load_poly_from_file(){
 	OpenFilename.nMaxFile = MAX_PATH;
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
-	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrInitialDir = ".";
 	OpenFilename.lpstrTitle = "Load Mesh";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
@@ -793,7 +793,7 @@ bool Marching::save_poly_to_file(){
 	OpenFilename.nMaxFile = MAX_PATH;
 	OpenFilename.lpstrFileTitle = szTitle;
 	OpenFilename.nMaxFileTitle = MAX_PATH;
-	OpenFilename.lpstrInitialDir = NULL;
+	OpenFilename.lpstrInitialDir = ".";
 	OpenFilename.lpstrTitle = "Save Mesh";
 	OpenFilename.Flags = OFN_EXPLORER;
 	OpenFilename.nFileOffset = 0;
@@ -806,7 +806,7 @@ bool Marching::save_poly_to_file(){
 	if (this->poly_data.vertex_list.empty())
 		return false;
 
-	if (GetOpenFileName(&OpenFilename) == false)
+	if (GetSaveFileName(&OpenFilename) == false)
 		return false;
 
 	errno_t err = fopen_s(&fp, OpenFilename.lpstrFile, "w");
