@@ -66,12 +66,4 @@
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\Source\fs.glsl">
-      <Filter>Source Files</Filter>
-    </None>
-    <None Include="..\..\Source\vs.glsl">
-      <Filter>Source Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>

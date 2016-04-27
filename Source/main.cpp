@@ -16,5 +16,6 @@ int main(int argc, char **argv)
 	Drawer drawer(&argc, argv);	
 	drawer.SetMarch(&march_maker);
 	drawer.SetEvaluator(&evaluator);
+	drawer.GetPolyData();
 	drawer.start();		
 }
