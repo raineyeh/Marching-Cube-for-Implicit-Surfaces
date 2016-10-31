@@ -6,7 +6,6 @@
 #include <math.h>
 using namespace std;
 
-float delta = 0.0000001;
 
 void Marching::print_step_info(){
 	Step_Data*sd = &this->poly_data.step_data;
@@ -262,8 +261,7 @@ bool Marching::check_constraints(float x, float y, float z){
 				within_constraints &= lhs < rhs;
 				break;
 			case Comp_Op::NAO:
-				printf("Error: Constraint incorrect\n");
-				return false;
+				printf("Constraint incorrect\n");
 			}
 		}
 	}
@@ -475,10 +473,7 @@ void Marching::calculate_step(float x_0, float y_0, float z_0){
 	for (int i = 0; i < 8; i++){
 		if(!check_constraints(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]))
 			return;
-		step->corner_values[i] = this->evaluate(
-			step->corner_coords[3 * i] + delta, 
-			step->corner_coords[3 * i + 1] + delta,
-			step->corner_coords[3 * i + 2] + delta);
+		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]);
 	}
 
 	//in the case that this->surface_step is set a positive value, change this->surface constant temporarily to calculate correctly.
