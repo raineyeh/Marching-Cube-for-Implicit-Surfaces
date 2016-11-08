@@ -83,6 +83,17 @@
       <AdditionalLibraryDirectories>..\..\Dependencies\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y /D "$(TargetDir)..\..\Dependencies\bin\imgui.dll" "$(OutDir)imgui.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\freeglut.dll" "$(OutDir)freeglut.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\glew32.dll" "$(OutDir)glew32.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\ShaderLib.dll" "$(OutDir)ShaderLib.dll";
+echo d | xcopy /Y /D "$(TargetDir)..\..\Source\shader" "$(ProjectDir)shader"
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>copy dll's and shaders to built/project directories</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -101,6 +112,17 @@
       <AdditionalLibraryDirectories>..\..\Dependencies\bin;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>freeglut.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y /D "$(TargetDir)..\..\Dependencies\bin\imgui.dll" "$(OutDir)imgui.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\freeglut.dll" "$(OutDir)freeglut.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\glew32.dll" "$(OutDir)glew32.dll";
+copy /Y /D "$(TargetDir)..\..\Dependencies\bin\ShaderLib.dll" "$(OutDir)ShaderLib.dll";
+echo d | xcopy /Y /D "$(TargetDir)..\..\Source\shader" "$(ProjectDir)shader"
+</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>copy dll's and shaders to built/project directories</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
