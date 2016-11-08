@@ -6,7 +6,7 @@
 #include <math.h>
 using namespace std;
 
-
+// Print information for a single grid cell evaluation. For debug only.
 void Marching::print_step_info(){
 	Step_Data*sd = &this->poly_data.step_data;
 	cout << "x_0:" << sd->corner_coords[0] << " y_0:" << sd->corner_coords[1] << " z_0:" << sd->corner_coords[2] << endl;
@@ -19,6 +19,7 @@ void Marching::print_step_info(){
 	cout << "cube_code:" << c_code << endl;
 }
 
+//Constructor
 Marching::Marching(void){
 	this->grid_step_size = (float)0.25;
 	this->evaluator = NULL;
@@ -35,12 +36,16 @@ Marching::Marching(void){
 	this->scale_x = this->scale_y = this->scale_z = 1.0;
 }
 
+/* This is only done for seeding mode. After a single step (ie. a grid cell is evaluated),
+we find the faces of that grid cell that has an intersection, and add the grid cells 
+adjacent to that face on a queue for later evaluation. */
 void Marching::find_cubes_for_seeding()
 {
 	bool cube_face_has_intersection[6] = { false };
 	bool edge_has_intersection[12] = { false };
 	xyz next_cube;
 
+	//find the edges with intersection
 	for (int i = 0; i < this->poly_data.step_data.edge_list.size(); i++)
 		edge_has_intersection[this->poly_data.step_data.edge_list[i]] = true;
 
@@ -50,7 +55,8 @@ void Marching::find_cubes_for_seeding()
 
 	//cout << "another find cube call from (" << x_curr << "," << y_curr << "," << z_curr << ")" << endl;
 
-	//for each face of the cube, check if an edge has an intersection
+	//find the faces on the cube that has an intersection
+	// by checking the 4 edges of that face. 
 	for (int f = 0; f < 6; f++){
 		for (int e = 0; e < 4; e++){
 			if (edge_has_intersection[cube_face_edge_table[f][e]]){
@@ -61,47 +67,75 @@ void Marching::find_cubes_for_seeding()
 	}
 
 	//printf("for current cube %f, %f, %f\n", x_curr, y_curr, z_curr);
-	//for each face of the cube, if there is an intersection, try to push the adjacent cube into the set
+	//We keep a set of grid cells that has been evaluated or are already on the queue to be evaluated.
+	//Here, for each grid cell adjacent to a face with intersection, if the gric cell is not in
+	//  the set, we add it to the set and queue it for evaluation.
 	for (int f = 0; f < 6; f++){
 		if (!cube_face_has_intersection[f])
 			continue;
 
+		//calculate the adjacent cell
 		next_cube.x = x_curr + cube_face_normal[f][0] * grid_step_size;
 		next_cube.y = y_curr + cube_face_normal[f][1] * grid_step_size;
 		next_cube.z = z_curr + cube_face_normal[f][2] * grid_step_size;
 		next_cube.idx = poly_data.step_data.step_i;
 
+		//check if it is inside the [-1,1] bound
 		if (next_cube.x >= -1 - 0.5*this->grid_step_size && (next_cube.x + 0.5*this->grid_step_size) <= 1 &&
 			next_cube.y >= -1 - 0.5*this->grid_step_size && (next_cube.y + 0.5*this->grid_step_size) <= 1 &&
 			next_cube.z >= -1 - 0.5*this->grid_step_size && (next_cube.z + 0.5*this->grid_step_size) <= 1)
 		{
+			//try to put the grid cell onto the set
 			bool seed_set_insert_successful = my_seed_set.insert(next_cube).second;
+			
 			/*printf(" %f %f %f - %x %x %x - %d \n", next_cube.x, next_cube.y, next_cube.z, 
 				*(unsigned int*)&next_cube.x, *(unsigned int*)&next_cube.y, *(unsigned int*)&next_cube.z,
 				seed_set_insert_successful);*/
-			//only push this on the queue if it has not already been on the queue
+			
+				//only push this on the queue if it has not already been on the queue
 			if (seed_set_insert_successful){
 				seed_queue.push_back(next_cube);
 			}
 		}
 	}
+}
 
-
-}//end of procedure 
-
+//calculate and put the starting seed into seed_grid
 void Marching::get_starting_seed_grid( xyz* seed_grid)
 {   
-	float dx = ((seed[0]/scale_x - (-1)) / grid_step_size);
-	//seed_grid.x = -1 + floor(dx)*grid_step_size;
+	float dx = ((seed[0] / scale_x - (-1)) / grid_step_size);
+	float dy = ((seed[1] / scale_y - (-1)) / grid_step_size);
+	float dz = ((seed[2] / scale_z - (-1)) / grid_step_size);
 	seed_grid->x = -1 + floor(dx)*grid_step_size;
-	float dy = ((seed[1] /scale_y - (-1)) / grid_step_size);
-	//seed_grid.y = -1+floor(dy)*grid_step_size;
 	seed_grid->y = -1 + floor(dy)*grid_step_size;
-	float dz = ((seed[2]/ scale_z - (-1)) / grid_step_size);
-	//seed_grid.z = -1+floor(dz)*grid_step_size;
 	seed_grid->z = -1 + floor(dz)*grid_step_size;
 	//cout <<"get_grid"<< seed_grid.x0 << "  " << seed_grid.y0 << "  " << seed_grid.z0 << endl;
 }
+
+void Marching::seed_mode(bool b) {
+	this->is_seed_mode = b;
+	this->reset_step();
+}
+
+void Marching::get_seed(float *x, float *y, float *z) {
+	*x = seed[0];
+	*y = seed[1];
+	*z = seed[2];
+}
+
+bool Marching::set_seed(float x, float y, float z)
+{
+	//check that the seed is within [-1,1] bound
+	if ((x <= 1 && x >= -1) && (y >= -1 && y <= 1) && (z >= -1 && z <= 1))
+	{
+		seed[0] = x; seed[1] = y; seed[2] = z;
+		this->reset_step();
+		return true;
+	}
+	else
+		return false;
+}
+
 
 bool Marching::set_evaluator(Evaluator* e){
 	if (e){
@@ -113,8 +147,10 @@ bool Marching::set_evaluator(Evaluator* e){
 }
 
 void Marching::set_surface_constant(float c){
-	this->surface_constant = c;
-	this->reset_step();
+	if (this->surface_constant != c){
+		this->surface_constant = c;
+		this->reset_step();
+	}
 }
 
 bool Marching::set_surface_repeat_step_distance(float l){
@@ -123,30 +159,6 @@ bool Marching::set_surface_repeat_step_distance(float l){
 	this->surface_step = l;
 	this->reset_step();
 	return true;
-}
-
-void Marching::seed_mode(bool b){   
-	this->is_seed_mode = b;
-	this->reset_step();
-	
-}
-
-void Marching::get_seed(float *x, float *y, float *z){
-	*x = seed[0];
-	*y = seed[1];
-	*z = seed[2];
-}
-
-bool Marching::set_seed(float x, float y, float z)
-{    
-	if ((x <= 1 && x >= -1) && (y >= -1 && y <= 1) && (z >= -1 && z <= 1))
-	{
-		seed[0] = x; seed[1] = y; seed[2] = z;
-		this->reset_step();
-		return true;
-	}
-	else
-		return false; 
 }
 
 bool Marching::repeating_surface_mode(bool b){
@@ -196,7 +208,6 @@ bool Marching::use_constraint(int constraint_i, bool use){
 
 float Marching::evaluate(Evaluator* e, float x, float y, float z){
 	if (e) {
-		//return x*x + y*z ;
 		float v = e->evaluate(scale_x * x, scale_y * y, scale_z * z);
 		/*if (v==NAN || isinf(v))
 		cout << "v:" << v << " isnan"<<(v==NAN)<<"  isinf"<<isinf(v)<< endl;
@@ -240,7 +251,7 @@ void Marching::set_scaling_z(float s){
 }
 
 
-
+// return true if the point is within constraints
 bool Marching::check_constraints(float x, float y, float z){
 	bool within_constraints = true;
 	for (size_t i = 0; i < this->constraints.size(); i++){
@@ -293,85 +304,69 @@ void Marching::reset_all_data(){
 	reset_step();
 }
 
+//Update poly_data by evaluating grid cells, 1 cell at a time if step_by_step_mode = on
 bool Marching::recalculate(){
 
 	if (is_seed_mode){
-		xyz seed_grid;
-		if (!this->is_step_by_step)
-		{//find intersections of the seed grid 
-		//call the grids that have common edges with the intersection 
-
-			reset_all_data();
-
-			get_starting_seed_grid(&seed_grid);
-
-			//cout << seed_grid.x0 << "  " << seed_grid.x1 << "   " << seed_grid.y0 << "   " << seed_grid.y1 << "    " << seed_grid.z0 << "    " <<
-				//seed_grid.z1 << endl;
-			//cout << "the first do square" << endl;
-			calculate_step(seed_grid.x, seed_grid.y, seed_grid.z);
-			//cout << "the first find cube" << endl;
-			this->add_step_to_poly_data();
+		if (!this->is_step_by_step)	{
+			//Evaluating all mesh-connected grid cells starting at the seed
 			
+			reset_all_data();
+			
+			// Get the seed grid to start with
+			xyz seed_grid;
+			get_starting_seed_grid(&seed_grid);
+			seed_queue.push_back(seed_grid);
 			my_seed_set.insert(seed_grid);
-			find_cubes_for_seeding();
 
+			// Evaluate grid on the queue until the queue is empty. 
+			// At each evaluation, connected grid cells are added onto the queue
 			while (!seed_queue.empty())	{
 				seed_grid = seed_queue.front();
 				seed_queue.pop_front();
 				calculate_step(seed_grid.x, seed_grid.y, seed_grid.z); 
 				this->add_step_to_poly_data();
 				find_cubes_for_seeding();
-				//this->poly_data.step_data.edge_list.clear();
-
-			}
-
-		}//end of if seed mode not step by step
-		else { //seed mode with step by step
-			xyz seed_grid;
-			if (this->is_step_by_step) {
-				//xyz x;
-				if (this->poly_data.step_data.step_i == 0) { //last step 
-					add_step_to_poly_data();
-					this->poly_data.step_data.step_i = -1;
-					return true;
-				}
-				if (this->poly_data.step_data.step_i == -1) { //finished steps already. no updates
-					return false;
-				}
-				if (this->poly_data.step_data.step_i == -2) { //first step
-					reset_all_data();
-
-					get_starting_seed_grid(&seed_grid);
-					seed_grid.idx = 1;
-					//seed_queue.push_back(seed_grid);
-					my_seed_set.insert(seed_grid);
-
-					this->poly_data.step_data.step_i = 1;
-									
-				}//end first step 
-				else//step i some positive value means we are in the middle of the step process
-				{
-					if (!seed_queue.empty())
-					{
-						seed_grid = seed_queue.front();
-						seed_queue.pop_front();
-						this->poly_data.step_data.step_i++;
-					}
-					else {
-						this->poly_data.step_data.step_i = 0;
-					}
-					add_step_to_poly_data();
-				}
-				
-				this->calculate_step(seed_grid.x, seed_grid.y, seed_grid.z);
-				find_cubes_for_seeding();
-
 			}
 		}
-	}
+		else { //seed mode with step by step
+			xyz seed_grid;
+			if (this->poly_data.step_data.step_i == 0) { //last step 
+				add_step_to_poly_data();
+				this->poly_data.step_data.step_i = -1;
+				return true;
+			}
+			else if (this->poly_data.step_data.step_i == -1) { //finished steps already. no updates
+				return false;
+			}
+			else if (this->poly_data.step_data.step_i == -2) { //first step
+				reset_all_data();
 
-	else { //None-seed mode
-		if (!this->is_step_by_step) {
+				get_starting_seed_grid(&seed_grid);
+				seed_grid.idx = 1;
+				my_seed_set.insert(seed_grid);
+				this->poly_data.step_data.step_i = 1;						
+			}
+			else { //step i some positive value means we are in the middle of the step process
+				if (!seed_queue.empty())
+				{
+					seed_grid = seed_queue.front();
+					seed_queue.pop_front();
+					this->poly_data.step_data.step_i++;
+				}
+				else {
+					this->poly_data.step_data.step_i = 0;
+				}
+				add_step_to_poly_data();
+			}
+				
+			this->calculate_step(seed_grid.x, seed_grid.y, seed_grid.z);
+			find_cubes_for_seeding();
+
+		}
+	} 
+	else { // None-seed mode
+		if (!this->is_step_by_step) { //draw all, grid by grid.
 			reset_all_data();
 			
 			float x_0, y_0, z_0;
@@ -403,15 +398,13 @@ bool Marching::recalculate(){
 
 				x_0 = y_0 = z_0 = -1;
 
-				//this->poly_data.step_data.step_i = (int)((2.0 + this->grid_step_size) / this->grid_step_size); //not accurate enough
 				this->poly_data.step_data.step_i = 0;
 				for (float x0 = -1.0; x0 < 1.0; x0 += this->grid_step_size)
 					this->poly_data.step_data.step_i++;
-				//cout << "one side: " << this->poly_data.step_data.step_i << endl;
 				this->poly_data.step_data.step_i *= this->poly_data.step_data.step_i * this->poly_data.step_data.step_i;
 				this->poly_data.step_data.step_i--;
 			}
-			else {
+			else { // some steps after first step
 				x_0 = this->poly_data.step_data.corner_coords[3]; //x_1 from last step 
 				y_0 = this->poly_data.step_data.corner_coords[4]; //y_0 from last step
 				z_0 = this->poly_data.step_data.corner_coords[5]; //z_0 from last step
@@ -436,14 +429,13 @@ bool Marching::recalculate(){
 	}
 	//for (int i = 0; i < poly_data.tri_list.size(); i++)
 		//std::cout << poly_data.tri_list[i] << " ";
-
 	return true;
-
-
 }
 
+// Interpolate on a 1d line starting at x_s with value v_s and ending at x_e 
+//  with value v_e, find x where the value is this->surface_constant
 float Marching::interp(float x_s, float x_e, float v_s, float v_e)
-{ //interpolate to this->surface_constant
+{ 
 	float v = ((this->surface_constant - v_s) / (v_e - v_s)) * (x_e - x_s);
 	if (isinf(v))
 		return  x_s + 0.5*(x_e - x_s);
@@ -453,31 +445,42 @@ float Marching::interp(float x_s, float x_e, float v_s, float v_e)
 
 }
 
+/* Construct the marching cube surface for a grid cell.
+The grid cell's lower x,y,z values of its corners is given in the parameter.
+The upper value of its corner is then calculated from the grid size.
+
+The function evaluates the grid cell corners' xyz value, create a look-up code from 
+those values depending on whether it is larger or smaller than the surface constant, 
+then use the look-up table value to construct the triangles and store it in step_data.
+*/
 void Marching::calculate_step(float x_0, float y_0, float z_0){
+	//get the grid upper boundary
 	float x_1 = x_0 + this->grid_step_size;
 	float y_1 = y_0 + this->grid_step_size;
 	float z_1 = z_0 + this->grid_step_size;
 
 	//cout << x_0 << " " << y_0 << " " << z_0 << " " << x_1 << " " << y_1 << " "<<z_1<<endl;
 	
+	//clear out step_data
 	Step_Data* step = &this->poly_data.step_data;
 	step->intersect_coord.clear();
 	step->tri_vlist.clear();
 	step->edge_list.clear();
 	
-
+	//set the x,y,z of the 8 points of the grid cell
 	step->corner_coords = { x_0, y_0, z_0, x_1, y_0, z_0, x_1, y_1, z_0, x_0, y_1, z_0, 
 		x_0, y_0, z_1, x_1, y_0, z_1, x_1, y_1, z_1, x_0, y_1, z_1 };
 	
-	//calculate the corner values
+	//evaluate the values at the 8 corners of the grid cell
 	for (int i = 0; i < 8; i++){
 		if(!check_constraints(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]))
 			return;
 		step->corner_values[i] = this->evaluate(step->corner_coords[3 * i], step->corner_coords[3 * i + 1], step->corner_coords[3 * i + 2]);
 	}
 
-	//in the case that this->surface_step is set a positive value, change this->surface constant temporarily to calculate correctly.
-	float orig_surface_constant = this->surface_constant;
+	//If the repeating-surface option is in use, change this->surface constant temporarily to calculate correctly.
+	//This option is not presented in the UI.
+	float surface_const = this->surface_constant;
 	if (this->is_repeating_surface){
 		float corner_val_min = step->corner_values[0]; float corner_val_max = step->corner_values[0];
 		for (int i = 1; i < 8; i++){
@@ -486,123 +489,116 @@ void Marching::calculate_step(float x_0, float y_0, float z_0){
 		}
 		float a = (corner_val_max - this->surface_constant) / this->surface_step;
 		a = floor(a);
-		this->surface_constant += this->surface_step * a;
-		step->surf_constant = this->surface_constant;
+		surface_const = this->surface_constant + this->surface_step * a;
+		step->surf_constant = surface_const;
 	}
 	
+	// Calculate the configuration code for look-up on the marching cube table
 	int cube_code = 0;
-	if (step->corner_values[0] > this->surface_constant) cube_code |= 1;
-	if (step->corner_values[1] > this->surface_constant) cube_code |= 2;
-	if (step->corner_values[2] > this->surface_constant) cube_code |= 4;
-	if (step->corner_values[3] > this->surface_constant) cube_code |= 8;
-	if (step->corner_values[4] > this->surface_constant) cube_code |= 16;
-	if (step->corner_values[5] > this->surface_constant) cube_code |= 32;
-	if (step->corner_values[6] > this->surface_constant) cube_code |= 64;
-	if (step->corner_values[7] > this->surface_constant) cube_code |= 128;
+	if (step->corner_values[0] > surface_const) cube_code |= 1;
+	if (step->corner_values[1] > surface_const) cube_code |= 2;
+	if (step->corner_values[2] > surface_const) cube_code |= 4;
+	if (step->corner_values[3] > surface_const) cube_code |= 8;
+	if (step->corner_values[4] > surface_const) cube_code |= 16;
+	if (step->corner_values[5] > surface_const) cube_code |= 32;
+	if (step->corner_values[6] > surface_const) cube_code |= 64;
+	if (step->corner_values[7] > surface_const) cube_code |= 128;
 
-	if (cube_code == 0 || cube_code == 255) {
-		this->surface_constant = orig_surface_constant;
+	//nothing is drawn if the cube is all positive or all negative.
+	if (cube_code == 0 || cube_code == 255) { 
 		return;
 	}
 
 	/*if (this->is_step_by_step)
-		print_step_info();
+		print_step_info(); //for debug
 		*/
 
+	// look-up the triangle edge list. 
 	int* tri_edge_list = tri_table[cube_code];
 
 	//For ambiguous cases, check and replace with alternative index if needed
-
+	//int flipped_tri_table[16]; //a temporary storage for tri_table entry 
 	int alternative_idx = ambiguity_check_and_redirect[cube_code][0];
-	int flipped_tri_table[16]; //a temporary storage for tri_table entry 
-	//with the triangles flipped to account for ambiguity cases
-	if (alternative_idx >= 0){ //ambiguous case
-		//cout << "ambiguous case!"<< endl;
-		
-		int* edge_to_check_list = ambiguity_check_and_redirect[cube_code]+1;
-		
+	if (alternative_idx >= 0){ //ambiguous case if the alt_idx is positive
+		// We resolve ambiguity by finding the mid-point of the listed vertices to check, 
+		//   and see if the midpoint is consistant with the surface for that look-up entry.
+		// By design, the surfaces are formed to assume the midpoint to be positive. 
+		//   If this is not the case, then the new look-up index is used instead.
+
+		//with the triangles flipped to account for ambiguity cases
+
+		//list of edges to find midpoint for
+		int* vert_to_check_list = ambiguity_check_and_redirect[cube_code]+1;
 		float midx = 0, midy = 0, midz = 0;
 		for (int i = 0; i < 4; i++){
-			int vi = edge_to_check_list[i];
+			int vi = vert_to_check_list[i];
 			midx += step->corner_coords[vi * 3];
 			midy += step->corner_coords[vi * 3 + 1];
 			midz += step->corner_coords[vi * 3 + 2];
 		}
 		midx /= 4.0; midy /= 4.0; midz /= 4.0;
+
+		//evaluate the value at this midpoint
 		float mid_val = this->evaluate(midx, midy, midz);
-		if (mid_val > this->surface_constant){
+
+		// Change the look-up table to the new table
+		if (mid_val > surface_const){
 			tri_edge_list = tri_table[alternative_idx];
-			for (int i = 0; i < 5; i++){
-				flipped_tri_table[i * 3] = tri_edge_list[i * 3];
-				flipped_tri_table[i * 3+1] = tri_edge_list[i * 3+2];
-				flipped_tri_table[i * 3+2] = tri_edge_list[i * 3+1];
-			}
-			flipped_tri_table[15] = -1; //last entry
-			tri_edge_list = flipped_tri_table;
 		}
 		
 	}
 
-	// calculate intersection coordinates
+	// Calculate intersection coordinates by interpolating linearly the corner values 
+	//   along the cell grid edges, and finding where the surface constant lies. 
+	//   The intersection coordinates will be the vertices of the triangles that forms 
+	//   the marching cube surface.
 	this->poly_data.step_data.edge_list.clear();
-	step->intersect_coord.resize(36, NAN);
+	unsigned int mapper[12] = { 12 }; //to map edge idx to the idx in intersect_coord
 	for (int ei = 0; ei < 12; ei++){
-		int v1 = cube_edge_vertex_table[ei][0];
-		int v2 = cube_edge_vertex_table[ei][1];
-		bool v1_val = (cube_code & two_to_the[v1]) != 0;
-		bool v2_val = (cube_code & two_to_the[v2]) != 0;
+		//For every grid celll edges, see if the sign (positive/negative) of its 2 vertices is different.
+		//If it's different, then there is an intersection on that edge.
+		int v1 = cube_edge_vertex_table[ei][0]; //vertex 1
+		int v2 = cube_edge_vertex_table[ei][1]; //vertex 2
+		//the cube code for the 2 vertices
+		bool v1_val = (cube_code & two_to_the[v1]); 
+		bool v2_val = (cube_code & two_to_the[v2]); 
 		
 		if (v1_val != v2_val){ //this edge has an intersecting point
-			step->edge_list.push_back(ei);
+			step->edge_list.push_back(ei); //add the edge to a list
 				
+			//find the intersection point on that edge
 			float x_interp = interp(step->corner_coords[v1 * 3], step->corner_coords[v2 * 3], step->corner_values[v1], step->corner_values[v2]);
 			float y_interp = interp(step->corner_coords[v1 * 3 + 1], step->corner_coords[v2 * 3 + 1], step->corner_values[v1], step->corner_values[v2]);
 			float z_interp = interp(step->corner_coords[v1 * 3 + 2], step->corner_coords[v2 * 3 + 2], step->corner_values[v1], step->corner_values[v2]);
 
-			step->intersect_coord[ei * 3] = x_interp;
-			step->intersect_coord[ei * 3 + 1] = y_interp;
-			step->intersect_coord[ei * 3 + 2] = z_interp;
+			// for mapping edge idx to the point
+			mapper[ei] = step->intersect_coord.size() / 3;
+
+			// storing the intersection coordinate
+			step->intersect_coord.push_back(x_interp);
+			step->intersect_coord.push_back(y_interp);
+			step->intersect_coord.push_back(z_interp);
+
 		}
-		
 	}
 
-	//go through tri_table, add triangle vertices
+	//go through tri_table, store the triangle vertex indices 
 	for (int i = 0; i < 16; i +=3){
 		int v1 = tri_edge_list[i];
 		int v2 = tri_edge_list[i+1];
 		int v3 = tri_edge_list[i+2];
 		if (v1 == -1) break;
-		step->tri_vlist.push_back(v1);
-		step->tri_vlist.push_back(v2);
-		step->tri_vlist.push_back(v3);
+		step->tri_vlist.push_back(mapper[v1]);
+		step->tri_vlist.push_back(mapper[v2]);
+		step->tri_vlist.push_back(mapper[v3]);
 	}
-
-	//get rid of the NaN points
-	int pi = 0;
-	for (int i = 0; i < step->intersect_coord.size()/3; i++){
-		if (!isnan(step->intersect_coord[i * 3])){
-			step->intersect_coord[pi * 3] = step->intersect_coord[i * 3];
-			step->intersect_coord[pi * 3+1] = step->intersect_coord[i * 3+1];
-			step->intersect_coord[pi * 3+2] = step->intersect_coord[i * 3+2];
-			//replace
-			for (int j = 0; j < step->tri_vlist.size(); j++){
-				if (step->tri_vlist[j] == i)
-					step->tri_vlist[j] = pi;
-			}
-			pi++;
-		}
-
-	}
-	//cout << "pi:" << pi << endl;
-	step->intersect_coord.resize(pi*3);
-
-	//reset the surface constant
-	this->surface_constant = orig_surface_constant;
-	
 }
 
+/* After calculating a grid cell, add the data to Poly_Data, which contains
+the surface mesh made from all the evaluated grid cells. */
 void Marching::add_step_to_poly_data(){
 	Step_Data* step = &this->poly_data.step_data;
+
 	int v_i_list[12];
 	for (int i = 0; i < 12; i++)
 		v_i_list[i] = -1;
@@ -624,15 +620,15 @@ void Marching::add_step_to_poly_data(){
 		int v3 = v_i_list[ step->tri_vlist[i + 2] ];
 		this->add_triangle(v1,v2,v3);
 	}
-
-	
 }
 
+// add a point to Poly_Data. Return the point index. Will return point index of 
+//   an existing points if they are considered the same points.
 int Marching::add_point(float xval, float yval, float zval){
-	int new_vertex_i = this->poly_data.vertex_list.size() / 3;
+	int new_vertex_i = this->poly_data.vertex_list.size() / 3; //index of the new vertex
 	//cout << new_vertex_i <<	"  " << xval << "\t" << yval << "\t" << zval  ;
 	int v_i_found = vertex_set.insert(xyz(xval, yval, zval, new_vertex_i)).first->idx;
-	if (v_i_found == new_vertex_i)
+	if (v_i_found == new_vertex_i) // There are no same points in the set
 	{
 		this->poly_data.vertex_list.push_back(xval);
 		this->poly_data.vertex_list.push_back(yval);
@@ -646,6 +642,7 @@ int Marching::add_point(float xval, float yval, float zval){
 	return v_i_found;
 }
 
+// Add a triangle to Poly_Data
 int Marching::add_triangle(int p1, int p2, int p3){
 	int new_tri_i = this->poly_data.tri_list.size();
 
@@ -657,7 +654,6 @@ int Marching::add_triangle(int p1, int p2, int p3){
 }
 
 Poly_Data const * Marching::get_poly_data(){
-	
 	return &this->poly_data;
 }
 
@@ -665,9 +661,7 @@ deque<xyz> const * Marching::get_seed_queue(){
 	return &this->seed_queue;
 }
 
-
-
-
+//Load a .ply mesh from file to display
 bool Marching::load_poly_from_file(){
 
 	reset_all_data();
@@ -776,6 +770,7 @@ bool Marching::load_poly_from_file(){
 	return true;
 }
 
+//Save the generated mesh to a .ply file
 bool Marching::save_poly_to_file(){
 	FILE *fp;
 	OPENFILENAME OpenFilename;

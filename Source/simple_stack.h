@@ -1,3 +1,6 @@
+/* A stack structure that tries to highlight on speed over safety. Used in evaluator because 
+the evaluator is called multiple times per grid, and needs to perform as fast as possible. */
+
 #pragma once
 
 #include <iostream>
@@ -28,6 +31,7 @@ public:
 	bool empty(){ return this->num_items == 0; }
 	T top(){ return item_arr[num_items-1]; }
 	void clear(){ num_items = 0; }
+
 private:
 	std::vector<T> item_arr;
 	int num_items;

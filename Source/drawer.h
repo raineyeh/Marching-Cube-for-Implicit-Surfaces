@@ -18,7 +18,7 @@ public:
 	void start();
 	void SetGridSize(float);
 	void SetStepMode(bool);
-	void SetEquation(string);
+	bool SetEquation(string);
 	void ResetStep();	
 	void LoadFile();
 	void SaveFile();

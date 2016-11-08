@@ -1,190 +1,117 @@
 #include "evaluator.h"
-#include <iostream>
 #include <windows.h>
 #include <fstream>
-#include <iostream>
 using namespace std;
 
-Evaluator::Evaluator()
-{
-	equation = "x+y";
-	token.clear();
+Evaluator::Evaluator(){
+	set_equation("x+y"); //put a default equation
 }
 
-Evaluator::Evaluator(std::string s) {
-	set_equation(s);
+Evaluator::Evaluator(std::string s){
+	if(!set_equation(s))
+		throw exception(); // throw exception if there's parse error for the input equation
 }
 
 bool Evaluator::set_equation(std::string s) {
-	string old_eq = equation;
-	equation = s;
-	tokenizer();
-
-	if (!check_bug()){
-		equation = old_eq;
-		tokenizer();
-		return false;
-	}
-
-	//not sure this is needed. both stacks should be empty already. -R
-	while (!operator_stack.empty())
-	{
-		operator_stack.pop();
-	}
-	while (!operand_stack.empty())
-	{
-		operand_stack.pop();
-	}
-	return true;
-}
-bool Evaluator::check_bug()
-{
-	if ( token.size() == 0) { 
-	//	std::cout<< "empty string" << endl; 
-		return false; 
-	}
-	int open_brace = 0;
-	for (int i = 0; i < token.size(); i++)
-	{ 
-		char ch = token[i].at(0);
-		if (is_open_brace(ch)){
-			open_brace++;
-		}
-		else if (is_close_brace(ch)){
-			open_brace--;
-			if (open_brace == -1){
-				//std::cout << "wrong braces" << endl; 
-				return false;
-			}
-		}
-		
-	}//end for
-
-	if (open_brace == 0) return true;
-	else {
-		std::cout << "wrong braces" << endl; return false;
-	}
+	return tokenize(s);
 }
 
+/* Look at the top of the operand stack and attempts to evaluate it. 
+If the next in the stack has higher operating precedence, it will be evaluated first
+by recursive all to this function. */
 void Evaluator::evaluate_op(){
-	char temp = operator_stack.top(); operator_stack.pop();  //cout << "pop opt stack" << temp << endl;
-	float val1 = operand_stack.top(); operand_stack.pop();   // cout << "pop op stack" << val1 << endl;
-	float val2 = operand_stack.top(); operand_stack.pop();   // cout << "pop opt stack" << val2 << endl;
-	float result = evaluate_operation(temp, val2, val1);     //  cout << "pop opt stack" << val2 << endl;
-	operand_stack.push(result);
+	char op = operator_stack.top(); operator_stack.pop();
+	
+	// an operator that takes 2 values (+,-,*,/,^)
+	if (is_operator(op)) {
+		float val1 = operand_stack.top(); operand_stack.pop(); //get the first value
+
+		//check to see if the next operator has a higher operator precedence.
+		//if so, evaluate it first. 
+		//eg. * and / has a higher operating precedence than + and -, and will be evaluated first.
+		if (!operator_stack.empty()) {
+			char op2 = operator_stack.top();
+			if (operator_precedence(op2) > operator_precedence(op)) {
+				evaluate_op();
+			}
+		}
+		float val2 = operand_stack.top(); operand_stack.pop(); //get the 2nd value
+		float result = evaluate_operation(op, val2, val1); //evaluate val_1 [op] val_2
+		operand_stack.push(result); //save the result on the operand stack
+	}
+	else if (op == 'N') { //negative sign. negate the value on the top of operand_stack
+		float val = operand_stack.top(); operand_stack.pop();
+		val = -val;
+		operand_stack.push(val);
+	}
+	else throw exception(); //unknown operation. Shouldn't reach here
 }
 
-
+/* Given x,y,z, evaluate their value on the equation by traversing the tokens
+and popping them on an operator/operand stack, and evaluating the stack when possible.
+Assume no parse error. */
 float Evaluator::evaluate(float x, float y, float z) {
-	//start evaluate 
+	if (!tokenized) tokenize(); //make sure the equation string is tokenized
 
-//		if (!(check_bug())) return NAN; //moved to set_equation()
+	TOK_TYPE tok_type; //type of token
+	string tok; //token
+	char ch; //first character in the token, as most tokens will only use the first character
+	float num;
 
-		for (int i = 0; i < token.size(); i++)
-		{//start of for
-			int tok_size = token[i].size();
-			char ch1 = token[i].at(0);
-			char ch2;
-			if (tok_size>1)
-				ch2 = token[i].at(1);
-
-			//cout << ch1<< is_number(ch1)<<endl;
-			if (is_variable(ch1))
-			{
-				if (ch1 == 'x' || ch1 == 'X') {
-					operand_stack.push(x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
-				}
-				else if (ch1 == 'y' || ch1 == 'Y') {
-					operand_stack.push(y); //std::cout << "stack so from var " << operand_stack.top() << endl;
-				}
-				else if (ch1 == 'z' || ch1 == 'Z') {
-					operand_stack.push(z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
-				}
-				else
-				{
-					std::cout <<"'"<< ch1 << "' is not an accepted variable ";
-					return NAN;
-				}
-			}
-			else if ((tok_size == 2) && (ch1 == '-') && is_variable(ch2))	{
-				if (ch2 == 'x' || ch2 == 'X') {
-					operand_stack.push(-1 * x);  //std::cout << "stack so from var  " << operand_stack.top() << endl;
-				}
-				else if (ch2 == 'y' || ch2 == 'Y') {
-					operand_stack.push(-1 * y); //std::cout << "stack so from var " << operand_stack.top() << endl;
-				}
-				else if (ch2 == 'z' || ch2 == 'Z') {
-					operand_stack.push(-1 * z); //std::cout << "stack so from var  " << operand_stack.top() << endl;
-				}
-				else
-				{
-					std::cout << "'" << ch1 << "' is not an accepted variable ";
-					return NAN;
-				}
-			}
-
-			else if ((tok_size >= 1) && (is_number(ch1) || is_number(ch1)))
-			{
-				std::string::size_type sz = tok_size;
-				float  d = stof(token[i], &sz);
-				//cout << "d="<< d << endl;
-				operand_stack.push(d);
-				//std::cout << "stack ss from number stof   = " << operand_stack.top() << endl;
-			}
-
-			else if (isoperator(ch1) && tok_size == 1)
-			{//start evaluating when operators arrive 
-				//cout << ch1 <<" "<< isoperator(ch1) <<" "<< endl;
-				//case open brace 
-				if (is_open_brace(ch1))
-					operator_stack.push(ch1);
-				//this part for testing closed brace we will do every calcualtion until the open brace
-				else if (is_close_brace(ch1))
-				{
-					//cout << "hi close brace" << endl;
-
-
-					while (!(is_open_brace(operator_stack.top())))
-					{//start while
-						evaluate_op();
-					}//end while
-					operator_stack.pop();
-				}//end of closed brace 
-
-				else if (isoperator(ch1) && !(is_open_brace(ch1)) && !(is_close_brace(ch1)))
-				{//start other operator if
-					while (true)
-					{//start of while
-						if ((operator_stack.empty()) || (operator_precedence(ch1) > operator_precedence(operator_stack.top())
-							|| (is_open_brace(operator_stack.top()))))
-						{
-							operator_stack.push(ch1); //cout << "operator_stack_push case " << ch1 << endl;
-							break;
-						}
-						//if (operator_stack.empty() || operand_stack.size() < 2) { cout << "no operand  operator are available" << endl; break;  return NAN; }
-						evaluate_op();
-					}//end of while
-				}// 
-			}//
-		} //
+	//traverse each token
+	for (auto i = 0; i < token.size(); i++) {
+		tok_type = this->token_type[i];
+		tok = this->token[i];
+		ch = tok[0];
 		
-		while (!operator_stack.empty()) {
-			evaluate_op();
-		}//end of while
+		switch (tok_type){
+		case NEG: //negative '-' (not to be confused with minus operation)
+			operator_stack.push('N');
+			break;
+		case VAR: //a variable (x,y,z)
+			if (ch == 'x' || ch == 'X')
+				operand_stack.push(x);
+			else if (ch == 'y' || ch == 'Y') 
+				operand_stack.push(y);
+			else if (ch == 'z' || ch == 'Z') 
+				operand_stack.push(z);
+			else
+				throw exception(); //shouldn't reach here because the tokenize() would have errored.
+			break;
+		case NUM: //a number
+			num = stof(token[i]);
+			operand_stack.push(num);
+			break;
+		case BRAC_O: // open bracket '('
+			operator_stack.push(ch);
+			break;
+		case BRAC_C: // close bracket ')'
+			//evaluate everything within the bracket
+			while (!this->is_open_brace(operator_stack.top()))
+				evaluate_op();
+			operator_stack.pop(); //pop the '('
+			break;
+		case OP: // operator +,-,*,/,^
+			operator_stack.push(ch);
+			break; 
+		} //end switch
+	} 
+	//finished traversing the tokens. evaluate everything on the stack
+	while (!operator_stack.empty()) {
+		evaluate_op();
+	}
 
-		//cout << "the final result of the equation =" << operand_stack.top();
-		float result = operand_stack.top();
-		operand_stack.pop();
-
-		return result;
-	
+	//final result of the evaluation
+	float result = operand_stack.top();  operand_stack.pop();
+	return result;
 } //end evaluater 
 
 
-
+// return the order to which operation should be carried out
 int Evaluator::operator_precedence(char ch){
 	switch (ch)
 	{
+	case 'N': return 4;
 	case '^': return 3;
 	case '/': return 2;
 	case '*': return 2;
@@ -192,10 +119,11 @@ int Evaluator::operator_precedence(char ch){
 	case '-': return 1;
 	case '(': return 0;
 	case ')': return 0;
-	default: return -1;  //cout << "no such operation " << endl;
+	default: throw exception(); //unknown operation. shouldn't reach here.
 	}
 }
 
+// given an operation and 2 values, calculate.
 float Evaluator::evaluate_operation(char ch, float val1, float val2){
 	 switch (ch){
 	 case '+': return val1 + val2;
@@ -203,55 +131,113 @@ float Evaluator::evaluate_operation(char ch, float val1, float val2){
 	 case '*': return val1 * val2;
 	 case '/': return val1 / val2;
 	 case '^': return pow(val1, val2);
+	 default: throw exception(); //unknown operation. shouldn't reach here.
 	 }
 }
 
-void Evaluator::tokenizer()
-{
+/* Break up the equation string into tokens */
+bool Evaluator::tokenize( string eq_str) {
+	this->tokenized = false;
+	if (eq_str.empty()) return false;
+
 	token.clear();
-	//to remove any spaces from the equation 
-	equation.erase(std::remove(equation.begin(), equation.end(), ' '), equation.end());
-	//now no spaces in equation 
-	//the equation for the checking of marching cubes 
-	// the result of the tokenization based on finding the operation 
-	int curr1 = 0;       //index to keep track of last split 
-	//cout << equation << endl;
-	int i;
-	if (equation[0] == '-')  i = 1; else i = 0;
-	for (; i<equation.size(); i++)        //we trace the equation character by character 
-	{//start for
-	 //cout << i <<" "<<equation[i]<< "   this is boolean " << isoperator(equation[i]) << endl;
-	 if ( i==0 && isoperator(equation[0]) && (equation[0] != '-'))
-	 {
-		 token.push_back(equation.substr(0, 1));
-		 curr1 = 1;
-	 }
-	 if (i>0 && isoperator(equation[i]) && (!is_neg(equation[i], equation[i - 1])))      //if the char is an operator but not a negative sign (this is to differntiate minus from negative )
-		{
-			//cout << i << " " << isoperator(equation[i]) << endl;
+	token_type.clear();
 
-			if (equation.substr(curr1, i - curr1) != "")
-			{
-				token.push_back(equation.substr(curr1, i - curr1)); 
+	//remove any spaces from the input equation 
+	eq_str.erase(remove(eq_str.begin(), eq_str.end(), ' '), eq_str.end());
+
+	bool neg = false; //switch if parsing a negative sign (not minus)
+	int brac_count = 0;
+	TOK_TYPE last_tok = NONE;
+	
+
+//	int curr1 = 0;       //index to keep track of last split 
+	for (auto i = 0; i < eq_str.size(); i++) {
+		char ch = eq_str[i];
+		string s(1, ch);
+		//cout << i <<" "<<eq_str[i]<< "   is_operator:" << is_operator(eq_str[i]) << endl;
+		
+		// Check for negative. A negative occurs when '-' is the first character in the equation, 
+		// or if the preceeding character is an operator or a '('
+		if (ch == '-' && (i == 0 || eq_str[i - 1] == '(' || is_operator(eq_str[i - 1]))) {
+			if (neg) return false; //double negative 
+			neg = true; 
+			token.push_back("NEG");
+			token_type.push_back(NEG);
+			continue;
+		}
+
+		else if (is_open_brace(ch)) {
+			// if the previous token is variable, number, or ")", assume multiply
+			if (last_tok == VAR || last_tok == NUM || last_tok == BRAC_C) {
+				token.push_back("*");
+				token_type.push_back(OP);
 			}
-			if (equation.substr(i, 1) != "")
-			{
-				token.push_back(equation.substr(i, 1)); 
+			token.push_back(s);
+			brac_count++;
+			last_tok = BRAC_O;
+		}
+		else if (is_close_brace(ch)) {
+			if (neg || last_tok == BRAC_O || last_tok == OP) return false; // "-)", "()", "[op])" aren't valid
+			if (brac_count == 0) return false; // close bracket encountered before open bracket
+			token.push_back(s);
+			brac_count--;
+			last_tok = BRAC_C;
+		}
+		else if (is_operator(ch)) {
+			// negative or operator followed by an operator is invalid
+			if (neg || last_tok == BRAC_O || last_tok == OP || last_tok == NONE) return false;
+			token.push_back(s);
+			last_tok = OP;
+		}
+		else if (is_number(ch)) {
+			if (last_tok == VAR || last_tok == BRAC_C) { //previous token is a variable or ')'. assume multiply
+				token.push_back("*");
+				token_type.push_back(OP);
 			}
-						curr1 = i + 1;
-		}//end if 
-	 }//end for
-	if (i > curr1)
-		token.push_back(equation.substr(curr1));                   //insertion to the	
-																  /* cout << "size of the vector token " << token.size() << endl;
-																   for (int i = 0; i < token.size(); i++)
-																   	cout << token[i] << endl;*/
-}//end of tokenizer
+			bool dot = ch == '.'; //see a dot 
+			while (i+1 < eq_str.size()) {
+				if (is_number(eq_str[i + 1])) {
+					if (eq_str[i + 1] == '.') {
+						if (dot) return false; //see 2 dots in this number, which is invalid number
+						dot = true;
+					}
+					s += eq_str[++i];
+				}
+				else break;
+			}
+			
+			if (s == ".") return false; //make sure the number isn't just a '.'
+			
+			token.push_back(s);
+			last_tok = NUM;
+		}
+		else if (is_variable(ch)) {
+			// if before the variable it's another variable, a number, or a ")", assume multiply
+			if (last_tok == VAR || last_tok == NUM || last_tok == BRAC_C) {
+				token.push_back("*");
+				token_type.push_back(OP);
+			}
+			token.push_back(s);
+			last_tok = VAR;
+		}
+		else return false; //encountered unknown character
 
+		token_type.push_back(last_tok);
+		neg = false;
+	} //end of traversing the equation string
 
-bool Evaluator::get_equation_from_file(std::string &str)
-{
+	//check the number of bracket is correct
+	if (brac_count != 0) return false;
 
+	//tokenize successfully
+	this->equation = eq_str;
+	this->tokenized = true;
+	return true;
+}
+
+// Open the window file read menu, and attempts to read an equation from file.
+bool Evaluator::get_equation_from_file(std::string &str) {
 	FILE *fp;
 	OPENFILENAME OpenFilename;
 	TCHAR	szFile[MAX_PATH] = "equation.txt";
@@ -295,9 +281,6 @@ bool Evaluator::get_equation_from_file(std::string &str)
 	fclose(fp);
 	return b;
 }
-
-
-
 
 
 bool Evaluator::save_equation_to_file()
@@ -345,11 +328,6 @@ bool Evaluator::save_equation_to_file()
 
 	fclose(fp);
 	return ret != EOF;
-	
-	
-	
-	
-
 		
 }
 

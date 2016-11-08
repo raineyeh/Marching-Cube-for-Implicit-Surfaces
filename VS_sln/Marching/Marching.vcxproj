@@ -15,7 +15,6 @@
     <ClCompile Include="..\..\Source\evaluator.cpp" />
     <ClCompile Include="..\..\Source\main.cpp" />
     <ClCompile Include="..\..\Source\marching.cpp" />
-    <ClCompile Include="..\..\Source\MyFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\drawer.h" />
@@ -24,11 +23,17 @@
     <ClInclude Include="..\..\Source\imgui_impl_glut.h" />
     <ClInclude Include="..\..\Source\marching.h" />
     <ClInclude Include="..\..\Source\marching_lookup.h" />
-    <ClInclude Include="..\..\Source\MyFile.h" />
     <ClInclude Include="..\..\Source\normal.h" />
     <ClInclude Include="..\..\Source\ShaderLib.h" />
     <ClInclude Include="..\..\Source\simple_stack.h" />
     <ClInclude Include="..\..\Source\vao.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\shader\cube_fs.glsl" />
+    <None Include="..\..\shader\cube_vs.glsl" />
+    <None Include="..\..\shader\mesh_fs.glsl" />
+    <None Include="..\..\shader\mesh_gs.glsl" />
+    <None Include="..\..\shader\mesh_vs.glsl" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{BDEE767C-F49F-487A-8676-72AD1AD55F06}</ProjectGuid>

@@ -27,9 +27,6 @@
     <ClCompile Include="..\..\Source\evaluator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Source\MyFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Source\marching.h">
@@ -47,9 +44,6 @@
     <ClInclude Include="..\..\Source\vao.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Source\MyFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Source\ShaderLib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -65,5 +59,22 @@
     <ClInclude Include="..\..\Source\normal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\shader\cube_vs.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\shader\mesh_fs.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\shader\mesh_gs.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\shader\mesh_vs.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="..\..\shader\cube_fs.glsl">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

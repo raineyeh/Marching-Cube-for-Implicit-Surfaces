@@ -1,33 +1,13 @@
-#ifndef MARCHING_LOOKUP_531_H
-#define MARCHING_LOOKUP_531_H
+/*
+This file contains various look-up tables used for creating 3d marching cube. 
+*/
+
+#pragma once
 
 int two_to_the[]={1, 2, 4, 8, 16, 32, 64, 128};
 
-/* 2D cases
-int line_table[][4] = {
-	{ -1, -1, -1, -1 }, //0
-	{ 0, 3, -1, -1 }, //1
-	{ 0, 1, -1, -1 }, //2
-	{ 1, 3, -1, -1 }, //3
-	{ 1, 2, -1, -1 }, //4
-	{ 0, 1, 2, 3 }, //5 ambiguous case
-	{ 0, 2, -1, -1 }, //6
-	{ 2, 3, -1, -1 }, //7
-	{ 2, 3, -1, -1 }, //8
-	{ 0, 2, -1, -1 }, //9
-	{ 0, 3, 1, 2 }, //10 ambiguous case
-	{ 1, 2, -1, -1 }, //11
-	{ 1, 3, -1, -1 }, //12
-	{ 0, 1, -1, -1 }, //13
-	{ 0, 3, -1, -1 }, //14
-	{ -1, -1, -1, -1 }, //15
-};
 
-int ambiguous_line_table_redirect[] = { // if midpoint is neg (does not match v0), then use the new lookup value
-	-1, -1, -1, -1, -1, 10, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1
-};
-*/
-int cube_edge_vertex_table[][2] = { //edge i is on cube vertex vj,vk
+int cube_edge_vertex_table[][2] = { //edge i connects cube vertex v1,v2
 	{ 0, 1 }, //edge 1
 	{ 1, 2 }, //edge 2
 	{ 2, 3 }, //edge 3
@@ -69,6 +49,18 @@ int cube_face_normal[][3] = { // face i has normal x,y,z
 	{0,-1,0}
 };
 
+/* tri_table list the edge numbers that contains the vertices of the triangles of the marching cube surfaces.
+* It's a list of { e1,e2,e3,e4... e15, -1} for each of the 256 possible marching cube configurations.
+* The look-up index is a grid cell's corner value's combination. 
+* 
+* A grid cell has a surface made of triangle(s) t1,t2,t3...
+* t1 made of vertices v1,v2,v3, t2 made of v4,v5,v6, t3 made of v7,v8,v9...
+* v1 lies on edge e1, v2 on e2, v3 on e3... etc.
+* 
+* If the vertex value is -1, then there is no triangle.
+* There are at most 5 triangles in a grid cell, so each entries has at most 5*3 non-negative element. 
+* Last element is always -1 to indicate end of the array.
+*/
 int tri_table[][16] = {
 	{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },	//0
 	{ 0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 },	//1
@@ -328,8 +320,13 @@ int tri_table[][16] = {
 	{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 } };	//255
 
 
-
-int ambiguity_check_and_redirect[][5] = { // 1 new tri_table index, 4 edge_index to check midpoint for. Compare to first index ([1]) listed. 
+/* This table deals with ambiguity in marching cubes.
+* For each vertex corner value combinations, there may be more than 1 way to draw the internal surface.
+* This table lists a new tri_table index (-1 if the particular case is not an ambiguous case), and 4 vertices 
+*   where midpoint values are checked to determine if the surface is correct. 
+* If the midpoint value is not positive, then the new lookup value is used instead. 
+*/
+int ambiguity_check_and_redirect[][5] = { // 1 new tri_table index, 4 vertex_index to check midpoint for. 
 	{ -1, -1, -1, -1, -1 }, //0
 	{ -1, -1, -1, -1, -1 }, //1
 	{ -1, -1, -1, -1, -1 }, //2
@@ -589,4 +586,29 @@ int ambiguity_check_and_redirect[][5] = { // 1 new tri_table index, 4 edge_index
 	
 };
 
-#endif
+
+
+/* 2D cases, for testing during development. Not used in final product.
+int line_table[][4] = {
+{ -1, -1, -1, -1 }, //0
+{ 0, 3, -1, -1 }, //1
+{ 0, 1, -1, -1 }, //2
+{ 1, 3, -1, -1 }, //3
+{ 1, 2, -1, -1 }, //4
+{ 0, 1, 2, 3 }, //5 ambiguous case
+{ 0, 2, -1, -1 }, //6
+{ 2, 3, -1, -1 }, //7
+{ 2, 3, -1, -1 }, //8
+{ 0, 2, -1, -1 }, //9
+{ 0, 3, 1, 2 }, //10 ambiguous case
+{ 1, 2, -1, -1 }, //11
+{ 1, 3, -1, -1 }, //12
+{ 0, 1, -1, -1 }, //13
+{ 0, 3, -1, -1 }, //14
+{ -1, -1, -1, -1 }, //15
+};
+
+int ambiguous_line_table_redirect[] = { // if midpoint is neg (does not match v0), then use the new lookup value
+-1, -1, -1, -1, -1, 10, -1, -1, -1, -1, 5, -1, -1, -1, -1, -1
+};
+*/

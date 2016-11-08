@@ -15,7 +15,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "ShaderLib.h"
 #include "vao.h"
-#include "MyFile.h"
 #include "normal.h"
 using namespace std;
 
@@ -58,6 +57,7 @@ static ImVec4 colInCornerPoint = ImColor(0.0f, 1.0f, 0.0f, 1.0f);
 static ImVec4 colOutCornerPoint = ImColor(1.0f, 0.0f, 0.0f, 1.0f);
 string op[4] = { ">=", "<=", "<", ">" };
 bool bLeftPressed, bRightPressed, bHasInit, bMovieMode,bPlaying, bPause, bCubeStep,bReset;
+bool bEnterPressed = false;
 int nLastX, nLastY, nCurX, nCurY;
 int nCubeStep;
 int nLineWidth = 3;
@@ -71,7 +71,6 @@ static bool bConstraint1, bConstraint2, bConstraint3;
 static float frhs1, frhs2, frhs3;
 static int item1, item2, item3;
 // objects 
-MyFile myfile;
 Drawer* pDrawer = nullptr;
 ShaderLib MeshShader,CubeShader;
 thread movie;
@@ -161,31 +160,40 @@ void DrawGUI()
 	ImVec2 wpos(nWindowWidth - nBarWidth, nPolynomialHeight);
 	ImGui::SetWindowPos(wpos);
 	
-	if (!bMovieMode && ImGui::Button("Refresh")){
-		if (!bStepMode){
-			pDrawer->SetEquation(string(szEquation));
-			pDrawer->SetGridSize(fGrid);
-			pDrawer->Recalculate();						
-			if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
-				BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
-						   vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0],
-							normal[0], vNormal.size()*sizeof(glm::vec3), (void*)&vNormal[0]);
+	if (!bMovieMode && (ImGui::Button("Refresh") || bEnterPressed )){
+		bEnterPressed = false;
+		if (!bStepMode) {
+			if (!pDrawer->SetEquation(string(szEquation))) {
+				ImGui::OpenPopup("Equation error");
+			}
+			else {
+				pDrawer->SetGridSize(fGrid);
+				pDrawer->Recalculate();
+				if (pData && !pData->tri_list.empty() && !pData->vertex_list.empty())
+					BufferData(ibo[0], pData->tri_list.size() * sizeof(unsigned int), (void*)&pData->tri_list[0],
+						vbo[0], pData->vertex_list.size() * sizeof(float), (void*)&pData->vertex_list[0],
+						normal[0], vNormal.size() * sizeof(glm::vec3), (void*)&vNormal[0]);
+			}
 		}
 		else{
-			pDrawer->SetEquation(string(szEquation));
-			if (bCubeStep){
-				nCubeStep++;
-				if (nCubeStep == 4) {
-					nCubeStep = 0;
-					pDrawer->Recalculate();
-				}
+			if (!pDrawer->SetEquation(string(szEquation))) {
+				ImGui::OpenPopup("Equation error");
 			}
-			else pDrawer->Recalculate();
-			pDrawer->GetPolyData();
-			if (pData != nullptr){
-				bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;				
-			}		
-			bReset = false;
+			else {
+				if (bCubeStep) {
+					nCubeStep++;
+					if (nCubeStep == 4) {
+						nCubeStep = 0;
+						pDrawer->Recalculate();
+					}
+				}
+				else pDrawer->Recalculate();
+				pDrawer->GetPolyData();
+				if (pData != nullptr) {
+					bCubeStep = pData->step_data.intersect_coord.size() > 0 ? true : false;
+				}
+				bReset = false;
+			}
 		}
 	}ImGui::SameLine();
 	if (!bMovieMode && ImGui::Button("Reset")){		
@@ -233,14 +241,18 @@ void DrawGUI()
 	if (bMovieMode && ImGui::Button("Play")){
 		bPause = false;		
 		bStepMode = true;		
-		if (!bPlaying){
+		if (!bPlaying) {
 			pDrawer->SetStepMode(true);
-			pDrawer->SetEquation(string(szEquation));
-			pDrawer->SetGridSize(fGrid);				
-			bPlaying = true;	
-			bReset = false;
-			movie = thread(Movie);				
-		}				
+			if (!pDrawer->SetEquation(string(szEquation))) {
+				ImGui::OpenPopup("Equation error");
+			}
+			else {
+				pDrawer->SetGridSize(fGrid);
+				bPlaying = true;
+				bReset = false;
+				movie = thread(Movie);
+			}
+		}
 	}
 	if (bMovieMode)ImGui::SameLine();
 	if (bMovieMode && ImGui::Button("Pause")){
@@ -278,12 +290,16 @@ void DrawGUI()
 		MeshShader.setUniform("uTranslucent", bTranslucent);
 	}
 	if (!bMovieMode && ImGui::Checkbox("Step mode", &bStepMode)){
-		pDrawer->SetEquation(string(szEquation));	
-		for (int i = 0; i < 3; i++)
-			BufferData(ibo[i], 0, 0, vbo[i], 0, 0);		
-		pDrawer->ResetStep();
-		pDrawer->ResetAlldata();
-		pDrawer->SetStepMode(bStepMode);					
+		if (!pDrawer->SetEquation(string(szEquation))) {
+			ImGui::OpenPopup("Equation error");
+		}
+		else {
+			for (int i = 0; i < 3; i++)
+				BufferData(ibo[i], 0, 0, vbo[i], 0, 0);
+			pDrawer->ResetStep();
+			pDrawer->ResetAlldata();
+			pDrawer->SetStepMode(bStepMode);
+		}
 	}
 	if (!bSeedingMode && bStepMode){
 		char ch[20] = { 0 };
@@ -362,6 +378,14 @@ void DrawGUI()
 	if (ImGui::BeginPopupModal("Load error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		ImGui::Text("No data to load.\n\n");
+		if (ImGui::Button("OK", ImVec2(120, 0))) {
+			ImGui::CloseCurrentPopup();
+		}
+		ImGui::EndPopup();
+	}
+	if (ImGui::BeginPopupModal("Equation error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+	{
+		ImGui::Text("Invalid Equation.\n\n");
 		if (ImGui::Button("OK", ImVec2(120, 0))) {
 			ImGui::CloseCurrentPopup();
 		}
@@ -569,7 +593,10 @@ void display()
 void keyboard(unsigned char key, int x, int y){
 	ImGui_ImplGlut_KeyCallback(key);	
 	if (pDrawer && key == '\r'){
-		pDrawer->SetEquation(string(szEquation));
+		bEnterPressed = true;
+/*		if (!pDrawer->SetEquation(string(szEquation))) {
+			ImGui::OpenPopup("Equation error");
+		}
 		pDrawer->SetGridSize(fGrid);
 		pDrawer->Recalculate();		
 		vector<glm::vec3> vNormal = CalculateNormal(pData);
@@ -577,6 +604,7 @@ void keyboard(unsigned char key, int x, int y){
 			BufferData(ibo[0], pData->tri_list.size()*sizeof(unsigned int), (void*)&pData->tri_list[0],
 				vbo[0], pData->vertex_list.size()*sizeof(float), (void*)&pData->vertex_list[0],
 				normal[0], vNormal.size()*sizeof(glm::vec3), (void*)&vNormal[0]);
+	*/
 	}
 }
 
@@ -746,7 +774,7 @@ Drawer::Drawer(int* argc, char** argv){
 	initScene();	
 	printGlInfo();
 	m_pEvaluator = nullptr;
-	m_pMmarching = nullptr;			
+	m_pMmarching = nullptr;
 }
 
 bool Drawer::SetMarch(Marching* m){
@@ -797,9 +825,9 @@ void Drawer::SetStepMode(bool mode)
 		m_pMmarching->step_by_step_mode(mode);
 }
 
-void Drawer::SetEquation(string s){	
+bool Drawer::SetEquation(string s){	
 	if (m_pEvaluator)
-		m_pEvaluator->set_equation(s);		
+		return m_pEvaluator->set_equation(s);
 }
 
 void Drawer::ResetStep(){
